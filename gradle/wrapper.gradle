@@ -18,32 +18,16 @@
  ******************************************************************************/
 
 /**
- * buildSrc build.gradle file for com.robypomper.josp project
+ * Add a simple <code>wrapper</code> task to generate a Gradle wrapper.
+ *
+ * If set, it use the <code>gradleWrapperVersion</code> property as Gradle
+ * wrapper's version.
  */
 
-repositories {
-    mavenCentral()
-    gradlePluginPortal()
 
-    // Spring extra repository
-    maven { url 'https://repo.spring.io/milestone' }
-}
-
-ext {
-    set('dockerGradlePluginVersion', "0.10.9")
-    set('springGradlePluginVersion', "2.2.12.RELEASE")
-}
-
-dependencies {
-
-    // Docker compose support
-    compile "com.avast.gradle:gradle-docker-compose-plugin:${dockerGradlePluginVersion}"
-
-    // Spring Boot support
-    compile "org.springframework.boot:spring-boot-gradle-plugin:${springGradlePluginVersion}"
-
-    // Node.js support
-    compile 'com.github.node-gradle.node:com.github.node-gradle.node.gradle.plugin:3.0.1'
-
-}
-
+if (tasks.named("wrapper")==null)
+    tasks.register("wrapper", Wrapper) {
+        if (hasProperty('gradleWrapperVersion'))
+            gradleVersion = ext.get('gradleWrapperVersion')
+        distributionType = Wrapper.DistributionType.ALL
+    }

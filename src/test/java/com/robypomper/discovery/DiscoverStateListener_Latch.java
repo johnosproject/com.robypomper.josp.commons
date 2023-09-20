@@ -19,26 +19,29 @@
 
 package com.robypomper.discovery;
 
+import com.robypomper.discovery.Discover;
+import com.robypomper.discovery.DiscoverStateListener;
+
 import java.util.concurrent.CountDownLatch;
 
-public class PublisherStateListener_Latch implements PublisherStateListener {
+public class DiscoverStateListener_Latch implements DiscoverStateListener {
 
     public CountDownLatch onStart = new CountDownLatch(1);
     public CountDownLatch onStop = new CountDownLatch(1);
     public CountDownLatch onFail = new CountDownLatch(1);
 
     @Override
-    public void onStart(Publisher publisher) {
+    public void onStart(Discover discover) {
         onStart.countDown();
     }
 
     @Override
-    public void onStop(Publisher publisher) {
+    public void onStop(Discover discover) {
         onStop.countDown();
     }
 
     @Override
-    public void onFail(Publisher publisher, String failMsg, Throwable exception) {
+    public void onFail(Discover discover, String failMsg, Throwable exception) {
         onFail.countDown();
     }
 

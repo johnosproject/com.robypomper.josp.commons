@@ -1,3 +1,7 @@
+# JOSP Commons LICENCE
+
+[README](README.md) | [CHANGELOG](CHANGELOG.md) | [TODOs](TODOs.md) | [LICENCE](LICENCE.md)
+
 The John Operating System Project is the collection of software and configurations
 to generate IoT EcoSystem, like the John Operating System Platform one.
 Copyright (C) 2021 Roberto Pompermaier
@@ -18,10 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Author: Roberto Pompermaier
 robypomper@johnosproject.com
-Via Tre Santi, 5 - Bolzano (ITALY)
 
-
-
+---
+```
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -643,3 +646,4 @@ Program, unless a warranty or assumption of liability accompanies a
 copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS
+```

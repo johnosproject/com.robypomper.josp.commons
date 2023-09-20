@@ -17,31 +17,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-package com.robypomper.build.commons;
+package com.robypomper.discovery;
 
-/**
- * Utils class for naming management.
- */
-public class Naming {
+import com.robypomper.discovery.Publisher;
+import com.robypomper.discovery.PublisherStateListener;
 
-    /**
-     * Capitalize given string.
-     *
-     * @param str string to capitalize
-     * @return capitalized string
-     */
-    static public String capitalize(String str) {
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
+import java.util.concurrent.CountDownLatch;
+
+public class PublisherStateListener_Latch implements PublisherStateListener {
+
+    public CountDownLatch onStart = new CountDownLatch(1);
+    public CountDownLatch onStop = new CountDownLatch(1);
+    public CountDownLatch onFail = new CountDownLatch(1);
+
+    @Override
+    public void onStart(Publisher publisher) {
+        onStart.countDown();
     }
 
-    /**
-     * Minuscule given string.
-     *
-     * @param str string to minuscule
-     * @return minusculed string
-     */
-    static public String minuscule(String str) {
-        return str.substring(0, 1).toLowerCase() + str.substring(1);
+    @Override
+    public void onStop(Publisher publisher) {
+        onStop.countDown();
+    }
+
+    @Override
+    public void onFail(Publisher publisher, String failMsg, Throwable exception) {
+        onFail.countDown();
     }
 
 }

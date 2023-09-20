@@ -17,22 +17,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-package com.robypomper.build.commons;
+package com.robypomper.discovery;
 
-import org.gradle.api.JavaVersion;
+import com.robypomper.discovery.DiscoveryService;
+import com.robypomper.discovery.DiscoveryServicesListener;
 
-public class JavaVersionUtils {
+import java.util.concurrent.CountDownLatch;
 
-    public final static JavaVersion CURRENT_JAVA_VERSION = JavaVersion.current();
+public class DiscoveryServicesListener_Latch implements DiscoveryServicesListener {
 
-    public static boolean currentGreaterEqualsThan9() {
-        String currVer = System.getProperty("java.version");
-        return currVer.startsWith("9") || currVer.startsWith("1.9")
-                || currVer.startsWith("10")
-                || currVer.startsWith("11")
-                || currVer.startsWith("12")
-                || currVer.startsWith("13")
-                || currVer.startsWith("14");
+    public CountDownLatch onServiceDiscovered = new CountDownLatch(1);
+    public CountDownLatch onServiceLost = new CountDownLatch(1);
+
+    @Override
+    public void onServiceDiscovered(DiscoveryService discSrv) {
+        onServiceDiscovered.countDown();
+    }
+
+    @Override
+    public void onServiceLost(DiscoveryService lostSrv) {
+        onServiceLost.countDown();
     }
 
 }
