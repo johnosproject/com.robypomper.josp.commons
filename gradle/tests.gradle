@@ -40,42 +40,15 @@
 // SourceSes configs
 // -----------------
 
-sourceSets {
-
-    // Test's Commons
-
-    test_Commons {
-        java.srcDirs 'tests/test_Commons/java'
-        resources.srcDirs 'tests/test_Commons/resources'
-    }
-
-
-    // JOSP Commons
-
-    test_jospCommonsComm {
-        java.srcDirs 'tests/test_jospCommonsComm/java'
-        resources.srcDirs 'tests/test_jospCommonsComm/resources'
-    }
-
-    test_jospCommonsDisc {
-        java.srcDirs 'tests/test_jospCommonsDisc/java'
-        resources.srcDirs 'tests/test_jospCommonsDisc/resources'
-    }
-
-}
+sourceSets {}
 
 dependencies {
     // Test's commons
-    test_CommonsImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
-    test_CommonsRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
-    test_CommonsImplementation sourceSets.main.output
-    test_CommonsImplementation sourceSets.main.runtimeClasspath
-
-    // JOSP Commons
-    test_jospCommonsCommImplementation sourceSets.test_Commons.output
-    test_jospCommonsCommImplementation sourceSets.test_Commons.runtimeClasspath
-    test_jospCommonsDiscImplementation sourceSets.test_Commons.output
-    test_jospCommonsDiscImplementation sourceSets.test_Commons.runtimeClasspath
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+    testImplementation sourceSets.main.output
+    testImplementation sourceSets.main.runtimeClasspath
+    testRuntimeOnly "org.slf4j:slf4j-nop:${project.ext.get("version.slf4j")}"
 }
 
 
@@ -83,34 +56,6 @@ dependencies {
 // Tests Tasks
 // -----------
 
-// JOSP Commons
-
-task jospJOSPCommonsAllTest(type: Test) {
-    description = 'Runs all JOD tests.'
-    group = 'verification'
-}
-check.dependsOn jospJOSPCommonsAllTest
-
-task jospJOSPCommonsCommTest(type: Test) {
-    description = 'Runs integration tests.'
-    group = 'verification'
-
-    testClassesDirs = sourceSets.test_jospCommonsComm.output.classesDirs
-    classpath = sourceSets.test_jospCommonsComm.runtimeClasspath
-    shouldRunAfter test
+tasks.test {
     useJUnitPlatform()
-    //jvmArgs '-Djavax.net.debug=all'
 }
-jospJOSPCommonsAllTest.dependsOn jospJOSPCommonsCommTest
-
-task jospJOSPCommonsDiscTest(type: Test) {
-    description = 'Runs JOD Executors tests.'
-    group = 'verification'
-
-    testClassesDirs = sourceSets.test_jospCommonsDisc.output.classesDirs
-    classpath = sourceSets.test_jospCommonsDisc.runtimeClasspath
-    shouldRunAfter test
-    useJUnitPlatform()
-    //jvmArgs '-Djavax.net.debug=all'
-}
-jospJOSPCommonsAllTest.dependsOn jospJOSPCommonsDiscTest
