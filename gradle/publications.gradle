@@ -78,16 +78,4 @@ if (enablePrivate) {
         }
     }
 
-    // -----------------
-    // Publication tasks
-    // -----------------
-
-    tasks.register("jospCommons_PublishToRemote") {
-        description = 'Publish JOSP Commons component to remote repository...'
-        group = 'JOSP publishers (remote)'
-        dependsOn publishJospCommonsPublicationToMavenRepository
-        tasks.josp_PublishToRemote.dependsOn jospCommons_PublishToRemote
-        mustRunAfter jospAPIs_PublishToRemote
-    }
-
 }   // if (ext.get(enablePrivate))
