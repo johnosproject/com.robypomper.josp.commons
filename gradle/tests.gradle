@@ -44,8 +44,8 @@ sourceSets {}
 
 dependencies {
     // Test's commons
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+    testImplementation "org.junit.jupiter:junit-jupiter:${project.ext.get("version.junit-jupiter")}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation sourceSets.main.output
     testImplementation sourceSets.main.runtimeClasspath
     testRuntimeOnly "org.slf4j:slf4j-nop:${project.ext.get("version.slf4j")}"

@@ -96,11 +96,12 @@ ext {
 
 //@formatter:off
 ext {
-    set('version.apache.log4j'      , '2.13.1')
-    set('version.snakeyaml'         , '1.25')
-    set('version.scribejava'        , '6.9.0')
-    set('version.lombok'            , '1.18.12')
-    set('version.jmdns'             , '3.5.5')
-    set('version.slf4j'             , '2.0.9')
+    set('version.apache.log4j'      , '2.20.0')
+    set('version.snakeyaml'         , '2.2')
+    set('version.scribejava'        , '8.3.3')
+    set('version.lombok'            , '1.18.28')
+    set('version.jmdns'             , '3.5.8')
+    set('version.slf4j'               , '2.0.9')
+    set('version.junit-jupiter'       , '5.10.0')
 }
 //@formatter:on
