@@ -68,8 +68,8 @@ dependencies {
     // Test's commons
     test_CommonsImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
     test_CommonsRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
-    test_CommonsImplementation sourceSets.jospCommons.output
-    test_CommonsImplementation sourceSets.jospCommons.runtimeClasspath
+    test_CommonsImplementation sourceSets.main.output
+    test_CommonsImplementation sourceSets.main.runtimeClasspath
 
     // JOSP Commons
     test_jospCommonsCommImplementation sourceSets.test_Commons.output

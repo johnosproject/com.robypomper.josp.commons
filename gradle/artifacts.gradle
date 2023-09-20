@@ -17,11 +17,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ******************************************************************************/
 
+import com.robypomper.build.commons.Naming
 import com.robypomper.build.java.JavaPublicationUtils
 import com.robypomper.build.gradle.GradleBuildInfo
 
+import java.text.SimpleDateFormat
+
 /**
- * Gradle configurations to manage JOSP Commons as java implementations.
+ * Project's artifacts' definitions from their sourceSets until their publications.
+ *
+ * Artifacts configured:
+ * - jospCommons: sourceSet.main
+ *
+ * Summary:
+ * - Sources configs
+ * - Publication configs
+ * - Utils methods
  */
 
 
@@ -29,53 +40,160 @@ import com.robypomper.build.gradle.GradleBuildInfo
 // Components configs
 // ------------------
 
-sourceSets {
-    jospCommons {}
-}
+sourceSets {}
 
 configurations {}
 
 dependencies {
-    jospCommonsImplementation "com.robypomper.josp:jospAPIs:${project.ext.get("version.deps.jospAPIs")}"
-    jospCommonsImplementation "org.apache.logging.log4j:log4j-api:${project.ext.get("version.apache.log4j")}"           // Logger
-    jospCommonsImplementation "org.apache.logging.log4j:log4j-core:${project.ext.get("version.apache.log4j")}"
-    jospCommonsImplementation "org.yaml:snakeyaml:${project.ext.get("version.snakeyaml")}"                              // YAML
-    jospCommonsImplementation "com.github.scribejava:scribejava-core:${project.ext.get("version.scribejava")}"          // HTTP & OAuth2
-    jospCommonsImplementation "com.github.scribejava:scribejava-apis:${project.ext.get("version.scribejava")}"
-    jospCommonsCompileOnly "org.projectlombok:lombok:${project.ext.get("version.lombok")}"                              // Lombok annotations
-    jospCommonsAnnotationProcessor "org.projectlombok:lombok:${project.ext.get("version.lombok")}"
-    jospCommonsImplementation "org.jmdns:jmdns:${project.ext.get("version.jmdns")}"                                     // JmDNS
+    implementation "com.robypomper.josp:jospAPIs:${project.ext.get("version.deps.jospAPIs")}"
+    implementation "org.apache.logging.log4j:log4j-api:${project.ext.get("version.apache.log4j")}"           // Logger
+    implementation "org.apache.logging.log4j:log4j-core:${project.ext.get("version.apache.log4j")}"
+    implementation "org.yaml:snakeyaml:${project.ext.get("version.snakeyaml")}"                              // YAML
+    implementation "com.github.scribejava:scribejava-core:${project.ext.get("version.scribejava")}"          // HTTP & OAuth2
+    implementation "com.github.scribejava:scribejava-apis:${project.ext.get("version.scribejava")}"
+    compileOnly "org.projectlombok:lombok:${project.ext.get("version.lombok")}"                              // Lombok annotations
+    annotationProcessor "org.projectlombok:lombok:${project.ext.get("version.lombok")}"
+    implementation "org.jmdns:jmdns:${project.ext.get("version.jmdns")}"                                     // JmDNS
 
 }
 
 
-GradleBuildInfo.makeBuildInfoForSourceSet(project, sourceSets.jospCommons, (String)project.ext.get("version.build.jospCommons"));
+GradleBuildInfo.makeBuildInfoForSourceSet(project, sourceSets.main, (String)project.ext.get("version.build.jospCommons"))
 
 
 // -------------------
 // Publication configs
 // -------------------
 
-String jospCommonsName = ext.get('artifactLongName')
-String jospCommonsArtifact = ext.get('artifactName')
-String jospCommonsVersion = ext.get('artifactVersion')
-String jospCommonsDescription = ext.get('artifactDescription')
-def jospCommonsPubDesc = new JavaPublicationUtils.Descriptor(project,sourceSets.jospCommons,jospCommonsName,jospCommonsArtifact,jospCommonsVersion,jospCommonsDescription)
-        .setUrlsFromProject(project)
-        .setLicenceGPLv3()
-        .setArtifactOpens()
-JavaPublicationUtils.generatePublication(project,jospCommonsPubDesc)
-tasks.jospCommonsDocs.enabled = !project.ext.get("disableDocs");
+String pubName = ext.get('artifactLongName')
+String pubArtifact = ext.get('artifactName')
+String pubDescription = ext.get('artifactDescription')
+String pubGroupId = ext.get('artifactGroupId')
+String pubVersion = ext.get('artifactVersion')
+String pubUrl = ext.get('projectUrl')
+String pubGit = ext.get('projectGit')
+String pubGitUrl = ext.get('projectGitUrl')
+String pubLicence = ext.get('artifactLicence')
+String pubLicenceUrl = ext.get('artifactLicenceUrl')
+String pubMainClass = hasProperty('artifactMainClass') ? ext.get('artifactMainClass') : null
+SourceSet pubSourcesSet = sourceSets.main
+
+tasks.jar {
+    doFirstArchiveBaseName(it, pubArtifact)
+
+    //from(jospJODSourcesSet.getOutput())
+
+    getManifest().attributes(prepareManifestAttributes(pubSourcesSet, pubName, pubVersion, pubLicence, pubLicenceUrl, pubMainClass, ""))
+}
+
+tasks.register("jarDeps", org.gradle.jvm.tasks.Jar.class) {
+    setGroup(BasePlugin.BUILD_GROUP)
+    setClassifier(JavaPublicationUtils.CLASSIFIER_DEP)
+    doFirstArchiveBaseName(it, pubArtifact)
+
+    List<File> fs = new ArrayList<>()
+    for (File f : pubSourcesSet.getRuntimeClasspath())
+        if (f.exists() && !f.isDirectory())
+            fs.add(f)
+    from(fs)
+
+    getManifest().attributes(prepareManifestAttributes(pubSourcesSet, pubName, pubVersion, pubLicence, pubLicenceUrl, pubMainClass, ""))
+}
+
+tasks.javadoc {
+    setTitle(String.format("%s JavaDocs", Naming.capitalize(pubName)))
+
+    FileCollection classPath = it.getClasspath()
+    classPath = classPath + pubSourcesSet.getRuntimeClasspath()
+    classPath = classPath + project.files(pubSourcesSet.getCompileClasspath().getFiles())
+    classPath = classPath + pubSourcesSet.getAnnotationProcessorPath()
+    setClasspath(classPath)
+
+    setFailOnError(false)
+
+    enabled = !project.ext.get("disableDocs")
+}
+
+tasks.register("jarDocs", org.gradle.jvm.tasks.Jar.class) {
+    setGroup(BasePlugin.BUILD_GROUP)
+    setClassifier(JavaPublicationUtils.CLASSIFIER_DOC)
+    doFirstArchiveBaseName(it, pubArtifact)
+
+    from(tasks.javadoc.getOutputs())
+
+    enabled = !project.ext.get("disableDocs")
+
+    getManifest().attributes(prepareManifestAttributes(pubSourcesSet, pubName, pubVersion, pubLicence, pubLicenceUrl, pubMainClass, ""))
+}
+
+tasks.register("jarSrc", org.gradle.jvm.tasks.Jar.class) {
+    setGroup(BasePlugin.BUILD_GROUP)
+    setClassifier(JavaPublicationUtils.CLASSIFIER_SRC)
+    doFirstArchiveBaseName(it, pubArtifact)
+
+    from(pubSourcesSet.getAllSource())
+
+    getManifest().attributes(prepareManifestAttributes(pubSourcesSet, pubName, pubVersion, pubLicence, pubLicenceUrl, pubMainClass, ""))
+}
+
+publishing {
+    publications {
+        myPub(MavenPublication) {
+            groupId = pubGroupId
+            artifactId = pubArtifact
+            version = pubVersion
+
+            artifact jar
+            artifact jarDeps
+            artifact jarDocs
+            artifact jarSrc
+        }
+    }
+}
+def pub_pom = publishing.publications.myPub.getPom()
+JavaPublicationUtils.initPom(pub_pom, pubName, pubDescription, pubUrl, pubGit, pubGitUrl, pubLicence, pubLicenceUrl)
+def pub_configs = configurations.getByName(pubSourcesSet.getImplementationConfigurationName())
+JavaPublicationUtils.injectDependenciesToPom(pub_pom, pub_configs, true)
 
 
-// -----------------
-// Publication tasks
-// -----------------
 
-task jospCommons_PublishToLocal {
-    description = 'Publish JOSP Commons component to local repository...'
-    group = 'JOSP publishers (locals)'
-    dependsOn publishJospCommonsPublicationToMavenLocal
-    tasks.josp_PublishToLocal.dependsOn jospCommons_PublishToLocal
-    mustRunAfter jospAPIs_PublishToLocal
+// -------------
+// Utils methods
+// -------------
+
+static void doFirstArchiveBaseName(final org.gradle.jvm.tasks.Jar jarTask, String baseName) {
+    jarTask.doFirst(new Action<Task>() {
+        void execute(Task task) {
+            jarTask.setBaseName(baseName)
+        }
+    })
+}
+
+static Map<String, String> prepareManifestAttributes(SourceSet sourceSet, String name, String version, String licence, String licenceUrl, String mainClass, String nameExtension) {
+    //@formatter:off
+    Map<String, String> res = new HashMap<>()
+    res.put("Implementation-Title"      , name + (nameExtension.isEmpty() ? "" : " - " + Naming.capitalize(nameExtension)))
+    res.put("Implementation-Version"    , version)
+    res.put("Implementation-Variant"    , (nameExtension.isEmpty() ? "default" : " - " + Naming.capitalize(nameExtension)))
+
+    res.put("Licence"                   , licence)
+    res.put("Licence-Url"               , licenceUrl)
+
+    if (mainClass != null)
+        res.put("Main-Class"            , mainClass)
+
+    res.put("Built-By"                  , System.getProperty("user.name"))
+    res.put("Build-Timestamp"           , new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()))
+    res.put("Created-By"                , String.format("Gradle %s", System.getProperty("gradle.gradleVersion}")))
+    res.put("Build-Jdk"                 , String.format("%s (%s %s)", System.getProperty("java.version"), System.getProperty("java.vendor"), System.getProperty("java.vm.version")))
+    res.put("Build-OS"                  , String.format("%s %s %s", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version")))
+    StringBuilder classPath = new StringBuilder()
+    for (File f : sourceSet.getRuntimeClasspath().getFiles())
+        if (f.getName().endsWith(".jar"))
+            classPath.append(String.format("libs/%s ", f.getName()))
+    res.put("Class-Path"                , classPath.toString())
+
+    //res.put("Build-Revision"            : versioning.info.commit)
+    //@formatter:on
+    return res
 }
