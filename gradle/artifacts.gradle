@@ -44,7 +44,7 @@ sourceSets {}
 configurations {}
 
 dependencies {
-    implementation "com.robypomper.josp:jospAPIs:${project.ext.get("version.deps.jospAPIs")}"
+    implementation "com.robypomper.josp:jospAPI:${project.ext.get("version.deps.jospAPIs")}"
     implementation "org.apache.logging.log4j:log4j-api:${project.ext.get("version.apache.log4j")}"           // Logger
     implementation "org.apache.logging.log4j:log4j-core:${project.ext.get("version.apache.log4j")}"
     implementation "org.yaml:snakeyaml:${project.ext.get("version.snakeyaml")}"                              // YAML
