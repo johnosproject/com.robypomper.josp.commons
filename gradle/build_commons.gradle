@@ -26,9 +26,6 @@ import com.robypomper.build.gradle.GradleBuildInfo
  * Components list:
  * <ul>
  *     <li>
- *         JOSP APIs
- *     </li>
- *     <li>
  *         JOSP Commons
  *     </li>
  * </ul>
@@ -53,27 +50,12 @@ import com.robypomper.build.gradle.GradleBuildInfo
 // ------------------
 
 sourceSets {
-
-    // JOSP APIs
-    jospAPIs {}
-
-    // JOSP Commons
     jospCommons {}
-
 }
 
 configurations {}
 
 dependencies {
-
-    // JOSP APIs
-    jospAPIsCompile "org.slf4j:slf4j-api:${project.ext.get("version.slf4j")}"
-    jospAPIsCompileOnly "org.projectlombok:lombok:${project.ext.get("version.lombok")}"                                 // Lombok annotations
-    jospAPIsAnnotationProcessor "org.projectlombok:lombok:${project.ext.get("version.lombok")}"
-    jospAPIsImplementation "com.fasterxml.jackson.core:jackson-databind:${project.ext.get("version.jackson")}"
-    jospAPIsImplementation "com.fasterxml.jackson.core:jackson-annotations:${project.ext.get("version.jackson")}"
-
-    // JOSP Commons
     jospCommonsImplementation "com.robypomper.josp:jospAPIs:${project.ext.get("version.deps.jospAPIs")}"
     jospCommonsImplementation "org.apache.logging.log4j:log4j-api:${project.ext.get("version.apache.log4j")}"           // Logger
     jospCommonsImplementation "org.apache.logging.log4j:log4j-core:${project.ext.get("version.apache.log4j")}"
@@ -86,26 +68,13 @@ dependencies {
 
 }
 
-GradleBuildInfo.makeBuildInfoForSourceSet(project, sourceSets.jospAPIs, (String)project.ext.get("version.build.jospAPIs"));
 GradleBuildInfo.makeBuildInfoForSourceSet(project, sourceSets.jospCommons, (String)project.ext.get("version.build.jospCommons"));
+
 
 // -------------------
 // Publication configs
 // -------------------
 
-// JOSP Commons
-String jospAPIsName = 'JOSP APIs Library'
-String jospAPIsArtifact = 'jospAPIs'
-String jospAPIsVersion = project.ext.get("version.build.jospAPIs")
-String jospAPIsDescription = "This is the JOSP APIs library from John O.S. Project"
-def jospAPIsPubDesc = new JavaPublicationUtils.Descriptor(project,sourceSets.jospAPIs,jospAPIsName,jospAPIsArtifact,jospAPIsVersion,jospAPIsDescription)
-        .setUrlsFromProject(project)
-        .setLicenceGPLv3()
-        .setArtifactOpens()
-JavaPublicationUtils.generatePublication(project,jospAPIsPubDesc)
-tasks.jospAPIsDocs.enabled = !project.ext.get("disableDocs");
-
-// JOSP Commons
 String jospCommonsName = 'JOSP Commons Library'
 String jospCommonsArtifact = 'jospCommons'
 String jospCommonsVersion = project.ext.get("version.build.jospCommons")
@@ -122,28 +91,6 @@ tasks.jospCommonsDocs.enabled = !project.ext.get("disableDocs");
 // Publication tasks
 // -----------------
 
-// ALL
-task all_PublishToLocal {
-    description = 'Publish all JOSP and JCP components to local repository...'
-    group = 'JOSP publishers (locals)'
-}
-
-// ALL JOSP
-task josp_PublishToLocal {
-    description = 'Publish all JOSP components to local repository...'
-    group = 'JOSP publishers (locals)'
-    tasks.all_PublishToLocal.dependsOn josp_PublishToLocal
-}
-
-// JOSP APIs
-task jospAPIs_PublishToLocal {
-    description = 'Publish JOSP APIs component to local repository...'
-    group = 'JOSP publishers (locals)'
-    dependsOn publishJospAPIsPublicationToMavenLocal
-    tasks.josp_PublishToLocal.dependsOn jospAPIs_PublishToLocal
-}
-
-// JOSP Commons
 task jospCommons_PublishToLocal {
     description = 'Publish JOSP Commons component to local repository...'
     group = 'JOSP publishers (locals)'
