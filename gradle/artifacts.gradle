@@ -22,26 +22,6 @@ import com.robypomper.build.gradle.GradleBuildInfo
 
 /**
  * Gradle configurations to manage JOSP Commons as java implementations.
- *
- * Components list:
- * <ul>
- *     <li>
- *         JOSP Commons
- *     </li>
- * </ul>
- *
- * Summary:
- * <ul>
- *     <li>
- *         Components configs: sourceSets, configurations, dependencies and BuildInfo
- *     </li>
- *     <li>
- *         Publication configs: component's publications
- *     </li>
- *     <li>
- *         Publication tasks: publication's tasks to local repository
- *     </li>
- * </ul>
  */
 
 
@@ -68,6 +48,7 @@ dependencies {
 
 }
 
+
 GradleBuildInfo.makeBuildInfoForSourceSet(project, sourceSets.jospCommons, (String)project.ext.get("version.build.jospCommons"));
 
 
@@ -75,10 +56,10 @@ GradleBuildInfo.makeBuildInfoForSourceSet(project, sourceSets.jospCommons, (Stri
 // Publication configs
 // -------------------
 
-String jospCommonsName = 'JOSP Commons Library'
-String jospCommonsArtifact = 'jospCommons'
-String jospCommonsVersion = project.ext.get("version.build.jospCommons")
-String jospCommonsDescription = "This is the JOSP Commons library from John O.S. Project"
+String jospCommonsName = ext.get('artifactLongName')
+String jospCommonsArtifact = ext.get('artifactName')
+String jospCommonsVersion = ext.get('artifactVersion')
+String jospCommonsDescription = ext.get('artifactDescription')
 def jospCommonsPubDesc = new JavaPublicationUtils.Descriptor(project,sourceSets.jospCommons,jospCommonsName,jospCommonsArtifact,jospCommonsVersion,jospCommonsDescription)
         .setUrlsFromProject(project)
         .setLicenceGPLv3()
