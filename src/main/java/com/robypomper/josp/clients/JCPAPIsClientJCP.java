@@ -21,8 +21,8 @@ package com.robypomper.josp.clients;
 
 import com.robypomper.josp.consts.JOSPConstants;
 import com.robypomper.josp.states.StateException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -57,7 +57,7 @@ public class JCPAPIsClientJCP extends DefaultJCPClient2 implements JCPClient2.Co
 
     // Internal vars
 
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LoggerFactory.getLogger(JCPAPIsClientJCP.class);
     public boolean connFailedPrinted;
 
 

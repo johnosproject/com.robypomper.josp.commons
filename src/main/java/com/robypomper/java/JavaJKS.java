@@ -109,7 +109,7 @@ public class JavaJKS {
      * @return the loaded KeyStore.
      */
     public static KeyStore loadKeyStore(String ksPath, String ksPass) throws LoadingException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, String.format("Loading KeyStore from '%s' file", ksPath));
+        //log.trace(String.format("Loading KeyStore from '%s' file", ksPath));
 
         try {
             KeyStore ks = KeyStore.getInstance(KEYSTORE_TYPE);
@@ -129,7 +129,7 @@ public class JavaJKS {
      * @param ksPass the string containing the KeyStore password.
      */
     public static void storeKeyStore(KeyStore ks, String ksPath, String ksPass) throws LoadingException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, String.format("Storing KeyStore on '%s' file", ksPath));
+        //log.trace(String.format("Storing KeyStore on '%s' file", ksPath));
 
         try {
             dirExistOrCreate(ksPath);
@@ -145,7 +145,7 @@ public class JavaJKS {
      * to <code>exportCertFile</code>given certificate chain as public certificate to the KeyStore.
      */
     public static void exportCertificate(KeyStore keyStore, String exportCertFile, String ksAlias) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, String.format("Exporting certificate '%s' on '%s' file", ksAlias, exportCertFile));
+        //log.trace(String.format("Exporting certificate '%s' on '%s' file", ksAlias, exportCertFile));
 
         try {
             Certificate cert = keyStore.getCertificate(ksAlias);
@@ -166,7 +166,7 @@ public class JavaJKS {
      * to <code>exportCertFile</code>given certificate chain as public certificate to the KeyStore.
      */
     public static Certificate extractCertificate(KeyStore keyStore, String ksAlias) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, String.format("Extracting certificate '%s'", ksAlias));
+        //log.trace(String.format("Extracting certificate '%s'", ksAlias));
 
         try {
             return keyStore.getCertificate(ksAlias);
@@ -183,7 +183,7 @@ public class JavaJKS {
      * @return the loaded certificate.
      */
     public static Certificate loadCertificateFromFile(File file) throws LoadingException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, String.format("Loading certificate from '%s' file", file.getPath()));
+        //log.trace(String.format("Loading certificate from '%s' file", file.getPath()));
 
         try {
             byte[] fileBytes = Files.readAllBytes(file.toPath());
@@ -201,7 +201,7 @@ public class JavaJKS {
      * @return the loaded certificate.
      */
     public static Certificate loadCertificateFromBytes(byte[] bytesCert) throws LoadingException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Loading certificate from bytes");
+        //log.trace("Loading certificate from bytes");
 
         try {
             CertificateFactory certFactory = CertificateFactory.getInstance(CERT_TYPE);
@@ -224,7 +224,7 @@ public class JavaJKS {
      * @param trustManager the certificates destination.
      */
     public static void copyCertsFromTrustManagerToKeyStore(KeyStore keyStore, AbsCustomTrustManager trustManager) throws StoreException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Synchronizing certificate from trust manager to key store");
+        //log.trace("Synchronizing certificate from trust manager to key store");
 
         for (Map.Entry<String, Certificate> aliasAndCert : trustManager.getCertificates().entrySet())
             try {
@@ -246,7 +246,7 @@ public class JavaJKS {
      * @param trustManager the certificates source.
      */
     public static void copyCertsFromKeyStoreToTrustManager(KeyStore keyStore, AbsCustomTrustManager trustManager) {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Synchronizing certificate from key store to trust manager");
+        //log.trace("Synchronizing certificate from key store to trust manager");
 
         try {
             Enumeration<String> aliases = keyStore.aliases();
@@ -254,7 +254,7 @@ public class JavaJKS {
                 String alias = aliases.nextElement();
                 Certificate cert = keyStore.getCertificate(alias);
                 if (cert == null) {
-                    //log.error(Mrk_Commons.COMM_SSL_UTILS, String.format("Can't find certificate for alias '%s'", alias));
+                    //log.error(String.format("Can't find certificate for alias '%s'", alias));
                     continue;
                 }
                 trustManager.addCertificate(alias, cert);

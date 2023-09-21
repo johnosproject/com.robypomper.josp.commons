@@ -23,8 +23,8 @@ import com.robypomper.discovery.impl.Avahi;
 import com.robypomper.discovery.impl.DNSSD;
 import com.robypomper.discovery.impl.JmDNS;
 import com.robypomper.discovery.impl.JmmDNS;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +45,7 @@ public class DiscoveryTestGeneric {
 
     // Internal vars
 
-    protected static Logger log = LogManager.getLogger();
+    protected static Logger log = LoggerFactory.getLogger(DiscoveryTestGeneric.class);
 
     String implName;
     int timeoutMs;

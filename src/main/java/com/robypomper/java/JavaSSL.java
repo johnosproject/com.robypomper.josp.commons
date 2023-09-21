@@ -55,7 +55,7 @@ public class JavaSSL {
      * @return the generated {@link SSLContext}.
      */
     public static SSLContext generateSSLContext(KeyStore keyStore, String ksPass, TrustManager trustManager) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, String.format("Generating SSL context from key store and%strust store", trustManager != null ? "" : " empty "));
+        //log.trace( String.format("Generating SSL context from key store and%strust store", trustManager != null ? "" : " empty "));
 
         if (ksPass == null) ksPass = "";
         try {
@@ -82,7 +82,7 @@ public class JavaSSL {
      * @return the array containing the default {@link TrustManager}.
      */
     private static TrustManager[] generateTrustManagers(KeyStore keyStore) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Generating trust manager from key store");
+        //log.trace("Generating trust manager from key store");
 
         try {
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TRUSTMNGR_ALG);
@@ -106,7 +106,7 @@ public class JavaSSL {
      * @return the array containing the default {@link KeyManager}.
      */
     private static KeyManager[] generateKeyManager(KeyStore keyStore, String ksPass) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Generating key manager from key store");
+        //log.trace("Generating key manager from key store");
 
         KeyManagerFactory kmf;
         try {
@@ -133,7 +133,7 @@ public class JavaSSL {
      * @return the peer id.
      */
     public static String getPeerId(SSLSocket peerSocket) throws PeerException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Getting SSL session from peer socket");
+        //log.trace("Getting SSL session from peer socket");
 
         SSLSession session = peerSocket.getSession();
         try {

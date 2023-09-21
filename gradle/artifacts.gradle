@@ -45,8 +45,7 @@ configurations {}
 
 dependencies {
     implementation "com.robypomper.josp:jospAPI:${project.ext.get("version.deps.jospAPIs")}"
-    implementation "org.apache.logging.log4j:log4j-api:${project.ext.get("version.apache.log4j")}"           // Logger
-    runtimeOnly "org.apache.logging.log4j:log4j-core:${project.ext.get("version.apache.log4j")}"
+    implementation "org.slf4j:slf4j-api:${project.ext.get("version.slf4j")}"                                 // Logger
     implementation "org.yaml:snakeyaml:${project.ext.get("version.snakeyaml")}"                              // YAML
     implementation "com.github.scribejava:scribejava-core:${project.ext.get("version.scribejava")}"          // HTTP & OAuth2
     implementation "com.github.scribejava:scribejava-apis:${project.ext.get("version.scribejava")}"
@@ -190,6 +189,7 @@ static Map<String, String> prepareManifestAttributes(SourceSet sourceSet, String
         if (f.getName().endsWith(".jar"))
             classPath.append(String.format("libs/%s ", f.getName()))
     res.put("Class-Path"                , classPath.toString())
+    res.put("Multi-Release"             , "true")
 
     //res.put("Build-Revision"            : versioning.info.commit)
     //@formatter:on
