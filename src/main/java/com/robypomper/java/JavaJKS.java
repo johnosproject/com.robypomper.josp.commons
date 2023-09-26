@@ -113,8 +113,9 @@ public class JavaJKS {
 
         try {
             KeyStore ks = KeyStore.getInstance(KEYSTORE_TYPE);
-            InputStream keyStoreInputStream = new FileInputStream(ksPath);
-            ks.load(keyStoreInputStream, ksPass.toCharArray());
+            FileInputStream keyStoreInputStream = new FileInputStream(ksPath);
+            //InputStream keyStoreInputStream = Files.newInputStream(Paths.get(ksPath));
+            ks.load(keyStoreInputStream, ksPass!=null && !ksPass.isEmpty() ? ksPass.toCharArray() : null);
             return ks;
         } catch (Exception e) {
             throw new LoadingException(String.format("Error loading key store from '%s' file because %s", ksPath, e.getMessage()), e);
@@ -134,6 +135,7 @@ public class JavaJKS {
         try {
             dirExistOrCreate(ksPath);
             FileOutputStream keyStoreOutputStream = new FileOutputStream(ksPath);
+            //OutputStream keyStoreOutputStream = Files.newOutputStream(Paths.get(ksPath));
             ks.store(keyStoreOutputStream, ksPass.toCharArray());
         } catch (Exception e) {
             throw new LoadingException(String.format("Error storing key store from '%s' file because %s", ksPath, e.getMessage()), e);

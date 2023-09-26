@@ -33,8 +33,8 @@ public class JavaSSL {
 
     // Class constants
 
-    public static final String TRUSTMNGR_ALG = "PKIX";          // TrustManagerFactory.getDefaultAlgorithm() => PKIX
-    public static final String KEYMNGR_ALG = "SunX509";         // KeyManagerFactory.getDefaultAlgorithm() = > SunX509
+    public static final String TRUSTMNGR_ALG = TrustManagerFactory.getDefaultAlgorithm();   // "PKIX";          // TrustManagerFactory.getDefaultAlgorithm() => PKIX
+    public static final String KEYMNGR_ALG = KeyManagerFactory.getDefaultAlgorithm();   // "SunX509";         // KeyManagerFactory.getDefaultAlgorithm() = > SunX509
     public static final String SSL_PROTOCOL = "TLS";
 
 
