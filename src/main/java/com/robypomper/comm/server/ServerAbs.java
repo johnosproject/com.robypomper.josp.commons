@@ -230,7 +230,7 @@ public abstract class ServerAbs implements Server {
                     client = generateClient(socket);
 
                 } catch (PeerConnectionException e) {
-                    emitOnFail("Error generating server's client", e);
+                    emitOnFail(null, String.format("Error generating server's client for '%s' socket.", socket), e);
                     continue;
                 }
 
