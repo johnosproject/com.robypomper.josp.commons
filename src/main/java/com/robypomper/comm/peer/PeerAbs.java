@@ -296,8 +296,10 @@ public abstract class PeerAbs implements Peer {
 
                     // Remote causes
                     if (e.getMessage().equals("Can't read data because reached end of stream")) {
-                        errorOnDataRead = true;
-                        emitOnFail("Error reading data", e);
+                        if (!getState().isDisconnecting()) {
+                            errorOnDataRead = true;
+                            emitOnFail("Error reading data", e);
+                        }
                         break;                          // Remote disconnection without ByeMsg (NB!: wrong/error way)
                     }
 
