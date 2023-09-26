@@ -36,8 +36,8 @@ public class JCPAPIsClientObj extends DefaultJCPClient2 implements JCPClient2.Co
 
     // Constructor
 
-    public JCPAPIsClientObj(boolean useSSL, String client, String secret, String urlAPIs, String urlAuth) throws AuthenticationException {
-        super(client, secret, urlAPIs, useSSL, urlAuth, "openid offline_access", "", "jcp", 30, JCP_NAME);
+    public JCPAPIsClientObj(boolean useSSL, String client, String secret, String urlAPIs, String urlAuth, int connectionRetrySeconds) throws AuthenticationException, StateException {
+        super(client, secret, urlAPIs, useSSL, urlAuth, "openid offline_access", "", "jcp", connectionRetrySeconds, JCP_NAME);
         addConnectionListener(this);
 
         connect();
