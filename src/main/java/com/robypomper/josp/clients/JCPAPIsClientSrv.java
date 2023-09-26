@@ -32,7 +32,6 @@ public abstract class JCPAPIsClientSrv extends DefaultJCPClient2 implements JCPC
 
     private static final Logger log = LoggerFactory.getLogger(JCPAPIsClientSrv.class);
     public static final String JCP_NAME = "JCP APIs";
-    public boolean connFailedPrinted;
 
 
     // Constructor
@@ -41,14 +40,7 @@ public abstract class JCPAPIsClientSrv extends DefaultJCPClient2 implements JCPC
         super(client, secret, urlAPIs, useSSL, urlAuth, "openid offline_access", callBack, "jcp", authCodeRefreshToken, 30, JCP_NAME);
         addConnectionListener(this);
 
-        connFailedPrinted = true;
-        try {
-            connect();
-
-        } catch (StateException | AuthenticationException e) {
-            log.warn(String.format("Error connecting to JCP %s because %s", getApiName(), e.getMessage()), e);
-        }
-        connFailedPrinted = false;
+        connect();
     }
 
 
@@ -85,23 +77,23 @@ public abstract class JCPAPIsClientSrv extends DefaultJCPClient2 implements JCPC
 
     @Override
     public void onConnectionFailed(JCPClient2 jcpClient, Throwable t) {
-        if (connFailedPrinted) {
-            log.debug(String.format("Error on %s connection attempt because %s", JCP_NAME, t.getMessage()));
-        } else {
-            log.warn(String.format("Error on %s connection attempt because %s", JCP_NAME, t.getMessage()));
-            connFailedPrinted = true;
-        }
+        if (t instanceof JCPNotReachableException)
+            if (isConnecting())
+                log.trace(String.format("Can't connect to JCP APIs at '%s', retry later", jcpClient.getAPIsUrl()));
+            else
+                log.debug(String.format("Can't connect to JCP APIs at '%s', retry later", jcpClient.getAPIsUrl()));
+        else
+            log.debug(String.format("Error on JCP APIs connection attempt at '%s'", jcpClient.getAPIsUrl()), t);
     }
 
     @Override
     public void onAuthenticationFailed(JCPClient2 jcpClient, Throwable t) {
-        log.warn(String.format("Error on %s connection authentication because %s", getApiName(), t.getMessage()));
+        log.debug(String.format("Error on %s connection authentication because %s", getApiName(), t.getMessage()));
     }
 
     @Override
     public void onDisconnected(JCPClient2 jcpClient) {
-        log.info(String.format("%s disconnected", JCP_NAME));
-        connFailedPrinted = false;
+        log.debug(String.format("%s disconnected", JCP_NAME));
     }
 
     protected abstract void storeTokens();

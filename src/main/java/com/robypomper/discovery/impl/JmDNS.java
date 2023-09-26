@@ -206,7 +206,7 @@ public class JmDNS {
                             }
                     }
                 } catch (RuntimeException | IOException e) {
-                    log.warn(String.format("Can't initialize interface '%s' on address '%s'", intf.getDisplayName(), addr.getHostAddress()));
+                    log.warn(String.format("Can't initialize interface '%s' on address '%s'", intf.getDisplayName(), addr.getHostAddress()), e);
                 }
 
                 count++;

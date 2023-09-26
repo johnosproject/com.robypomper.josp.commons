@@ -85,29 +85,12 @@ public class DefaultJCPClient2 implements JCPClient2 {
     private Date lastConnection;
     private Date lastDisconnection;
 
-
-    // Constructor
-
-    public DefaultJCPClient2(String clientId, String clientSecret,
-                             String apisBaseUrl, boolean apisSecured,
-                             String authBaseUrl, String authScopes, String authCallBack, String authRealm,
-                             String apiName) {
-        this(clientId, clientSecret, apisBaseUrl, apisSecured, authBaseUrl, authScopes, authCallBack, authRealm, null, 30, apiName);
-    }
-
     public DefaultJCPClient2(String clientId, String clientSecret,
                              String apisBaseUrl, boolean apisSecured,
                              String authBaseUrl, String authScopes, String authCallBack, String authRealm,
                              int connectionRetrySeconds,
                              String apiName) {
         this(clientId, clientSecret, apisBaseUrl, apisSecured, authBaseUrl, authScopes, authCallBack, authRealm, null, connectionRetrySeconds, apiName);
-    }
-
-    public DefaultJCPClient2(String clientId, String clientSecret,
-                             String apisBaseUrl, boolean apisSecured,
-                             String authBaseUrl, String authScopes, String authCallBack, String authRealm, String authCodeRefreshToken,
-                             String apiName) {
-        this(clientId, clientSecret, apisBaseUrl, apisSecured, authBaseUrl, authScopes, authCallBack, authRealm, authCodeRefreshToken, 30, apiName);
     }
 
     public DefaultJCPClient2(String clientId, String clientSecret,
@@ -438,7 +421,7 @@ public class DefaultJCPClient2 implements JCPClient2 {
 
             } catch (JCPNotReachableException e) {
                 if (state.enumNotEquals(JCPClient2State.CONNECTING_WAITING_JCP)) {
-                    log.warn(String.format("JCP Client '%s' can't connect, start JCP Client connection timer", getApiName()));
+                    log.debug("JCP API not reachable, start JCP Client connection timer");
                     state.set(JCPClient2State.CONNECTING_WAITING_JCP);
                     startConnectionTimer();
                 }
@@ -451,7 +434,7 @@ public class DefaultJCPClient2 implements JCPClient2 {
 
             } catch (JCPNotReachableException e) {
                 if (state.enumNotEquals(JCPClient2State.CONNECTING_WAITING_AUTH)) {
-                    log.warn(String.format("JCP Client '%s' can't connect, start JCP Client connection timer", getApiName()));
+                    log.debug("JCP Auth not reachable, start JCP Client connection timer");
                     state.set(JCPClient2State.CONNECTING_WAITING_AUTH);
                     startConnectionTimer();
                 }
@@ -748,7 +731,9 @@ public class DefaultJCPClient2 implements JCPClient2 {
         assert state.enumEquals(JCPClient2State.CONNECTING_WAITING_JCP)
                 || state.enumEquals(JCPClient2State.CONNECTING_WAITING_AUTH) :
                 "Method startConnectionTimer() can be called only from CONNECTING_WAITING_JCP or CONNECTING_WAITING_AUTH state; current state " + state.get();
+        assert connectionTimer == null;
 
+        log.debug("Start JCP Client connection timer");
         connectionTimer = JavaTimers.initAndStart(new ReConnectionTimer(),true,String.format(TH_CONNECTION_NAME, apiName.toUpperCase()),Integer.toString(this.hashCode()),connectionTimerDelaySeconds * 1000,connectionTimerDelaySeconds * 1000);
     }
 

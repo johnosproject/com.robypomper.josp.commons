@@ -32,7 +32,6 @@ public class JCPAPIsClientObj extends DefaultJCPClient2 implements JCPClient2.Co
 
     private static final Logger log = LoggerFactory.getLogger(JCPAPIsClientObj.class);
     public static final String JCP_NAME = "JCP APIs";
-    public boolean connFailedPrinted;
 
 
     // Constructor
@@ -41,14 +40,7 @@ public class JCPAPIsClientObj extends DefaultJCPClient2 implements JCPClient2.Co
         super(client, secret, urlAPIs, useSSL, urlAuth, "openid offline_access", "", "jcp", 30, JCP_NAME);
         addConnectionListener(this);
 
-        connFailedPrinted = true;
-        try {
-            connect();
-
-        } catch (StateException e) {
-            log.warn(String.format("Error connecting to JCP %s because %s", getApiName(), e.getMessage()), e);
-        }
-        connFailedPrinted = false;
+        connect();
     }
 
 
@@ -67,17 +59,17 @@ public class JCPAPIsClientObj extends DefaultJCPClient2 implements JCPClient2.Co
     @Override
     public void onConnected(JCPClient2 jcpClient) {
         log.info(String.format("%s connected", JCP_NAME));
-        connFailedPrinted = false;
     }
 
     @Override
     public void onConnectionFailed(JCPClient2 jcpClient, Throwable t) {
-        if (connFailedPrinted) {
-            log.debug(String.format("Error on %s connection attempt because %s", JCP_NAME, t.getMessage()));
-        } else {
-            log.warn(String.format("Error on %s connection attempt because %s", JCP_NAME, t.getMessage()));
-            connFailedPrinted = true;
-        }
+        if (t instanceof JCPNotReachableException)
+            if (isConnecting())
+                log.trace(String.format("Can't connect to JCP APIs at '%s', retry later", jcpClient.getAPIsUrl()));
+            else
+                log.debug(String.format("Can't connect to JCP APIs at '%s', retry later", jcpClient.getAPIsUrl()));
+        else
+            log.debug(String.format("Error on JCP APIs connection attempt at '%s'", jcpClient.getAPIsUrl()), t);
     }
 
     @Override
