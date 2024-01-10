@@ -1,19 +1,18 @@
 package com.robypomper.java;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JavaJSONArrayToFileTest {
+
+    private static final boolean KEEP_IN_MEMORY = true;
 
     public static class TestJavaJSONArrayToFile extends JavaJSONArrayToFile<String, Integer> {
 
@@ -37,12 +36,17 @@ class JavaJSONArrayToFileTest {
         }
     }
 
-    class TestData {
+    static class TestData {
 
         private final long id;
         private final Date updatedAt;
         private final String payload;
 
+        public TestData() {
+            this.id = 0;
+            this.updatedAt = new Date();
+            this.payload = "";
+        }
         public TestData(long id, Date updatedAt, String payload) {
             this.id = id;
             this.updatedAt = updatedAt;
@@ -66,7 +70,7 @@ class JavaJSONArrayToFileTest {
 
     }
 
-    class TestDataJavaJSONArrayToFile extends JavaJSONArrayToFile<TestData, Long> {
+    static class TestDataJavaJSONArrayToFile extends JavaJSONArrayToFile<TestData, Long> {
 
         public TestDataJavaJSONArrayToFile(File jsonFile, boolean keepInMemory) throws FileException {
             super(jsonFile, TestData.class, keepInMemory);
@@ -91,15 +95,14 @@ class JavaJSONArrayToFileTest {
     @Test
     void testConstructor() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         assertNotNull(arrayToFile);
     }
 
     @Test
     void testConstructor_IllegalJSONFileAsNull() {
-        File jsonFile = null;
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new TestJavaJSONArrayToFile(jsonFile, true);
+            new TestJavaJSONArrayToFile(null, KEEP_IN_MEMORY);
         });
         String expectedMessage = "JSON Array File can not be null";
         String actualMessage = exception.getMessage();
@@ -110,7 +113,7 @@ class JavaJSONArrayToFileTest {
     void testConstructor_IllegalJSONFileAsDir() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json").getParentFile();
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new TestJavaJSONArrayToFile(jsonFile, true);
+            new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         });
         String expectedMessage = "JSON Array File can not be a directory";
         String actualMessage = exception.getMessage();
@@ -118,14 +121,14 @@ class JavaJSONArrayToFileTest {
     }
 
     @Test
-    void testConstructor_EmptyFile() throws IOException, JavaJSONArrayToFile.FileException {
+    void testConstructor_EmptyFile() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
         writer.write("");
         writer.close();
 
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         assertNotNull(arrayToFile);
         assertEquals(0, arrayToFile.count());
         assertEquals(0, arrayToFile.countBuffered());
@@ -133,14 +136,14 @@ class JavaJSONArrayToFileTest {
     }
 
     @Test
-    void testConstructor_EmptyArray() throws IOException, JavaJSONArrayToFile.FileException {
+    void testConstructor_EmptyArray() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
         writer.write("[]");
         writer.close();
 
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         assertNotNull(arrayToFile);
         assertEquals(0, arrayToFile.count());
         assertEquals(0, arrayToFile.countBuffered());
@@ -148,14 +151,14 @@ class JavaJSONArrayToFileTest {
     }
 
     @Test
-    void testConstructor_Array5Items() throws IOException, JavaJSONArrayToFile.FileException {
+    void testConstructor_Array5Items() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
         writer.write("[\"1\",\"2\",\"3\",\"4\",\"5\"]");
         writer.close();
 
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         assertNotNull(arrayToFile);
         assertEquals(5, arrayToFile.count());
         assertEquals(0, arrayToFile.countBuffered());
@@ -163,7 +166,7 @@ class JavaJSONArrayToFileTest {
     }
 
     @Test
-    void testConstructor_FileExceptionNotAnArray() throws IOException, JavaJSONArrayToFile.FileException {
+    void testConstructor_FileExceptionNotAnArray() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
@@ -171,7 +174,7 @@ class JavaJSONArrayToFileTest {
         writer.close();
 
         Exception exception = assertThrows(JavaJSONArrayToFile.FileException.class, () -> {
-            new TestJavaJSONArrayToFile(jsonFile, true);
+            new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         });
         String expectedPartialMessage = "Error reading file";
         String actualMessage = exception.getMessage();
@@ -179,7 +182,7 @@ class JavaJSONArrayToFileTest {
     }
 
     @Test
-    void testConstructor_FileExceptionBadFormatted() throws IOException, JavaJSONArrayToFile.FileException {
+    void testConstructor_FileExceptionBadFormatted() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
@@ -187,7 +190,7 @@ class JavaJSONArrayToFileTest {
         writer.close();
 
         Exception exception = assertThrows(JavaJSONArrayToFile.FileException.class, () -> {
-            new TestJavaJSONArrayToFile(jsonFile, true);
+            new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         });
         String expectedPartialMessage = "Error reading file";
         String actualMessage = exception.getMessage();
@@ -198,15 +201,16 @@ class JavaJSONArrayToFileTest {
     @Test
     void testAppend() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         arrayToFile.append("test");
         assertEquals(1, arrayToFile.count());
     }
+
     @Test
     void testAppend_FileWriteFail() throws IOException {
         //File jsonFile = File.createTempFile("data_empty", ".json");
         File jsonFile = new File("/root/test.json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         arrayToFile.append("test");
 
         Exception exception = assertThrows(JavaJSONArrayToFile.FileException.class, () -> {
@@ -219,16 +223,173 @@ class JavaJSONArrayToFileTest {
 
 
     @Test
+    void testAutoFlush() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(5);
+
+        for (int i = 0; i < 6; i++)
+            arrayToFile.append("test" + i);
+
+        JavaThreads.softSleep(100); // let the thread flush the buffer
+
+        assertEquals(5 - 2, arrayToFile.countBuffered());
+        assertEquals(3, arrayToFile.countFile());
+    }
+
+    @Test
+    void testAutoDelete() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+
+        arrayToFile.setReleaseBufferSize(3);
+        arrayToFile.setMaxBufferSize(10);
+        arrayToFile.setReleaseFileSize(5);
+        arrayToFile.setMaxFileSize(20);
+
+        for (int i = 0; i < 50; i++) {
+            arrayToFile.append("test" + i);
+            JavaThreads.softSleep(100); // let the thread flush the buffer
+            System.out.printf("%-2d#  TOT %3d => Buffer: %3d File: %3d", i, arrayToFile.count(), arrayToFile.countBuffered(), arrayToFile.countFile());
+            System.out.println("\t\t" + arrayToFile.getAll());
+        }
+    }
+
+    @Test
+    void testAutoFlush_becauseSetMaxBufferSize() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+
+        for (int i = 0; i < 6; i++)
+            arrayToFile.append("test" + i);
+
+        JavaThreads.softSleep(100); // let the thread flush the buffer
+
+        assertEquals(6, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(5);
+
+        JavaThreads.softSleep(100); // let the thread flush the buffer
+
+        assertEquals(5 - 2, arrayToFile.countBuffered());
+        assertEquals(3, arrayToFile.countFile());
+    }
+
+    @Test
+    void testAutoDelete_becauseSetMaxFileSize() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+
+        for (int i = 0; i < 6; i++)
+            arrayToFile.append("test" + i);
+
+        JavaThreads.softSleep(100); // let the thread flush the buffer
+
+        // Buffer: | 5 | 4 | 3 | 2 | 1 | 0 |
+        // File:   --
+        assertEquals(6, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(5);
+
+        JavaThreads.softSleep(100); // let the thread flush the buffer
+
+        // Buffer: | 5 | 4 | 3 |
+        // File:   | 2 | 1 | 0 |
+        assertEquals(5 - 2, arrayToFile.countBuffered());
+        assertEquals(3, arrayToFile.countFile());
+
+        arrayToFile.setReleaseFileSize(1);
+        arrayToFile.setMaxFileSize(2);
+
+        JavaThreads.softSleep(1000); // let the thread flush the buffer and the file
+
+        // Buffer: | 5 | 4 | 3 |
+        // File:   | 2 |
+        assertEquals(3, arrayToFile.countBuffered());
+        assertEquals(1, arrayToFile.countFile());
+    }
+
+    @Test
+    void testSetMaxBufferSize_IllegalArgumentException() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+
+        arrayToFile.setMaxBufferSize(arrayToFile.getReleaseBufferSize());
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            arrayToFile.setMaxBufferSize(arrayToFile.getReleaseBufferSize() - 1);
+            arrayToFile.setReleaseBufferSize(10);
+        });
+
+        String expectedPartialMessage = "Param maxBufferSize can not be less than releaseBufferSize";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedPartialMessage));
+    }
+
+    @Test
+    void testSetReleaseBufferSize_IllegalArgumentException() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+
+        arrayToFile.setReleaseBufferSize(arrayToFile.getMaxBufferSize());
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            arrayToFile.setReleaseBufferSize(arrayToFile.getMaxBufferSize() + 1);
+            arrayToFile.setReleaseBufferSize(10);
+        });
+
+        String expectedPartialMessage = "Param releaseBufferSize can not be greater than maxBufferSize";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedPartialMessage));
+    }
+
+    @Test
+    void testSetMaxFileSize_IllegalArgumentException() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+
+        arrayToFile.setMaxFileSize(arrayToFile.getReleaseFileSize());
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            arrayToFile.setMaxFileSize(arrayToFile.getReleaseFileSize() - 1);
+            arrayToFile.setReleaseFileSize(10);
+        });
+
+        String expectedPartialMessage = "Param maxFileSize can not be less than releaseFileSize";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedPartialMessage));
+    }
+
+    @Test
+    void testSetReleaseFileSize_IllegalArgumentException() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+
+        arrayToFile.setReleaseFileSize(arrayToFile.getMaxFileSize());
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            arrayToFile.setReleaseFileSize(arrayToFile.getMaxFileSize() + 1);
+            arrayToFile.setReleaseFileSize(10);
+        });
+
+        String expectedPartialMessage = "Param releaseFileSize can not be greater than maxFileSize";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedPartialMessage));
+    }
+
+
+    @Test
     void testStorage_FlushFull() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         arrayToFile.append("test");
 
         assertEquals(1, arrayToFile.count());
         assertEquals(1, arrayToFile.countBuffered());
         assertEquals(0, arrayToFile.countFile());
 
-        arrayToFile.flushCache(1);
+        arrayToFile.flushCache(true);
 
         assertEquals(1, arrayToFile.count());
         assertEquals(0, arrayToFile.countBuffered());
@@ -238,7 +399,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testStorage_FlushPartial() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         arrayToFile.append("test1");
         arrayToFile.append("test2");
         arrayToFile.append("test3");
@@ -249,7 +410,9 @@ class JavaJSONArrayToFileTest {
         assertEquals(5, arrayToFile.countBuffered());
         assertEquals(0, arrayToFile.countFile());
 
-        arrayToFile.flushCache(3);
+        arrayToFile.setReleaseBufferSize(3);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
 
         assertEquals(5, arrayToFile.count());
         assertEquals(2, arrayToFile.countBuffered());
@@ -259,7 +422,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testStorage_StoreSingleItem() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         arrayToFile.append("test");
 
         assertEquals(1, arrayToFile.count());
@@ -276,7 +439,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testStorage_StoreManyItems() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         arrayToFile.append("test1");
         arrayToFile.append("test2");
         arrayToFile.append("test3");
@@ -297,13 +460,15 @@ class JavaJSONArrayToFileTest {
     @Test
     void testStorage_StorePartial() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         arrayToFile.append("test1");
         arrayToFile.append("test2");
         arrayToFile.append("test3");
         arrayToFile.append("test4");
         arrayToFile.append("test5");
-        arrayToFile.flushCache(3);
+        arrayToFile.setReleaseBufferSize(3);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
 
         assertEquals(5, arrayToFile.count());
         assertEquals(2, arrayToFile.countBuffered());
@@ -320,7 +485,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testCountMethods() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         assertEquals(0, arrayToFile.count());
@@ -336,7 +501,9 @@ class JavaJSONArrayToFileTest {
         assertEquals(0, arrayToFile.countFile());
 
         // 1 item in buffer, 2 items into file
-        arrayToFile.flushCache(2);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
         assertEquals(3, arrayToFile.count());
         assertEquals(1, arrayToFile.countBuffered());
         assertEquals(2, arrayToFile.countFile());
@@ -352,7 +519,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testGetFirstMethods() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         assertNull(arrayToFile.getFirst());
@@ -368,7 +535,9 @@ class JavaJSONArrayToFileTest {
         assertNull(arrayToFile.getFirstFile());
 
         // 1 item in buffer, 2 items into file
-        arrayToFile.flushCache(2);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
         assertEquals("test1", arrayToFile.getFirst());
         assertEquals("test3", arrayToFile.getFirstBuffered());
         assertEquals("test1", arrayToFile.getFirstFile());
@@ -383,7 +552,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testGetLastMethods() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         assertNull(arrayToFile.getLast());
@@ -399,7 +568,9 @@ class JavaJSONArrayToFileTest {
         assertNull(arrayToFile.getLastFile());
 
         // 1 item in buffer, 2 items into file
-        arrayToFile.flushCache(2);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
         assertEquals("test3", arrayToFile.getLast());
         assertEquals("test3", arrayToFile.getLastBuffered());
         assertEquals("test2", arrayToFile.getLastFile());
@@ -414,7 +585,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testGetMethods() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         List<String> all = arrayToFile.getAll();
@@ -432,7 +603,9 @@ class JavaJSONArrayToFileTest {
         assertTrue(all.contains("test3"));
 
         // 1 item in buffer, 2 items into file
-        arrayToFile.flushCache(2);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
         all = arrayToFile.getAll();
         assertEquals(3, all.size());
         assertTrue(all.contains("test1"));
@@ -452,7 +625,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testGetLatestMethod() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         List<String> latest = arrayToFile.getLatest(2);
@@ -469,7 +642,9 @@ class JavaJSONArrayToFileTest {
         assertTrue(latest.contains("test3"));
 
         // 1 item in buffer, 2 items into file
-        arrayToFile.flushCache(2);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
         latest = arrayToFile.getLatest(2);
         assertEquals(2, latest.size());
         assertTrue(latest.contains("test2"));
@@ -486,7 +661,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testGetAncientMethod() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, true);
+        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         List<TestData> ancient = arrayToFile.getAncient(2);
@@ -503,7 +678,9 @@ class JavaJSONArrayToFileTest {
         assertEquals(2, ancient.get(1).getId());
 
         // 1 item in buffer, 2 items into file
-        arrayToFile.flushCache(2);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
         ancient = arrayToFile.getAncient(2);
         assertEquals(2, ancient.size());
         assertEquals(1, ancient.get(0).getId());
@@ -520,7 +697,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testGetByIdMethod() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, true);
+        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         List<TestData> byId = arrayToFile.getById(1L, 2L);
@@ -538,7 +715,9 @@ class JavaJSONArrayToFileTest {
 
         // 1 item in buffer, 2 items into file
         // 2 items from file
-        arrayToFile.flushCache(2);
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(arrayToFile.countBuffered());
+        arrayToFile.flushCache();
         byId = arrayToFile.getById(1L, 2L);
         assertEquals(2, byId.size());
         assertEquals(1, byId.get(0).getId());
@@ -546,7 +725,6 @@ class JavaJSONArrayToFileTest {
 
         // 1 item in buffer, 2 items into file
         // 1 item from buffer, 1 item from file
-        arrayToFile.flushCache(2);
         byId = arrayToFile.getById(2L, 3L);
         assertEquals(2, byId.size());
         assertEquals(2, byId.get(0).getId());
@@ -563,7 +741,7 @@ class JavaJSONArrayToFileTest {
     @Test
     void testGetByDataMethod() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
-        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, true);
+        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
 
         // no data
         Date fromDate = new Date(0);
@@ -583,7 +761,6 @@ class JavaJSONArrayToFileTest {
 
         // 1 item in buffer, 2 items into file
         // 2 items from file
-        arrayToFile.flushCache(2);
         byData = arrayToFile.getByData(fromDate, toDate);
         assertEquals(2, byData.size());
         assertEquals(1, byData.get(0).getId());
@@ -591,7 +768,6 @@ class JavaJSONArrayToFileTest {
 
         // 1 item in buffer, 2 items into file
         // 1 item from buffer, 1 item from file
-        arrayToFile.flushCache(2);
         byData = arrayToFile.getByData(new Date(fromDate.getTime() + 1001), new Date(toDate.getTime() + 1000));
         assertEquals(2, byData.size());
         assertEquals(2, byData.get(0).getId());

@@ -42,46 +42,140 @@ import java.util.*;
  * <p>
  * This class use the given file reference to store the JSON array. But, in order
  * to reduce the number of read/write operations on file, it also uses an internal
- * cache to keep part of the JSON array in memory.
- * <p>
- * When an item is added to the array, it is stored into the cacheBuffered. Then
- * you can use the method {@link #flushCache(int)} or {@link #storeCache()} to
- * flush the cacheBuffered to file.
+ * cache to keep part of the JSON array in memory. When an item is added to the
+ * array, it is stored into the cacheBuffered. Then you can use the method
+ * {@link #flushCache()} or {@link #storeCache()} to flush the cacheBuffered
+ * to file.<br/>
+ * Thanks to the {@link #isKeepInMemory()} property you can decide if the file
+ * must be read and stored in memory until the instance is destroyed. Otherwise,
+ * the file is read and stored in memory every time is needed. In both cases,
+ * the cacheBuffered is always stored in memory. Remember that the file is keep
+ * up to date only when the cacheBuffered is flushed to file.
  * <p>
  * All methods to get items from the JSON array, look for items into the
  * cacheBuffered but also into the JSON file. Depending on the requested items,
- * this class try to reduce the file access number.
+ * this class try to reduce the file access number.<br/>
+ * This class provide various methods to get/filter items from the JSON array.
+ * Here the principal methods:
+ * <ul>
+ *     <li>{@link #getAll()}</li>
+ *     <li>{@link #getLatest(long)}</li>
+ *     <li>{@link #getAncient(long)}</li>
+ *     <li>{@link #getById(Object, Object)}</li>
+ *     <li>{@link #getByData(Date, Date)}</li>
+ * </ul>
+ * For each one of those methods there is a corresponding method that accept a
+ * {@link Filter} to filter the returned items. For example:
+ * <pre>
+ *     getAll() -> filterAll(Filter)
+ * </pre>
+ * <p>
+ * If {@link #isAutoFlushEnabled()} is enabled, then when the number of items
+ * in cacheBuffered is greater than this value, then the cacheBuffered is
+ * flushed to file.<br/>
+ * Otherwise, the cacheBuffered is flushed to file only when
+ * {@link #flushCache()} or {@link #storeCache()} are called.
  *
  * @param <T> type of JSON array content.
  * @param <K> type of id of JSON array content.
  */
+@SuppressWarnings({"Convert2Lambda", "LombokGetterMayBeUsed", "unused"})
 public abstract class JavaJSONArrayToFile<T, K> {
 
     // Internal constants
 
+    public static final int DEF_MAX_BUFFER_SIZE = 250;
+    public static final int DEF_RELEASE_BUFFER_SIZE = 200;
+    public static final int DEF_MAX_FILE_SIZE = 10000;
+    public static final int DEF_RELEASE_FILE_SIZE = 2000;
     private final Filter<T> NO_FILTER = new Filter<T>() {
         @Override
         public boolean accepted(T o) {
             return true;
         }
     };
+    private static final boolean PRINT_TRACK = false;
+    private static final boolean PRINT_HEAVY_OPS = false;
+    private static final int PRINT_HEAVY_OPS_MIN_COUNT = 10 * 1000;
 
 
     // Internal vars
 
     private static final Logger log = LoggerFactory.getLogger(JavaJSONArrayToFile.class);
-    private final List<T> cacheBuffered;
-    private final ObjectMapper jsonMapper;
-    private final File jsonFile;
-    private final boolean keepInMemory;
+    private static final ObjectMapper jsonMapper = JsonMapper.builder().build();
+    /**
+     * The type of JSON array content.
+     */
     private final Class<T> typeOfT;
+    /**
+     * The instance's buffer. Where all items are stored before be flushed into the file.
+     */
+    private final List<T> cacheBuffered;
+    /**
+     * If true, the file is read and stored in memory until the instance is destroyed.
+     */
+    private final boolean keepInMemory;
+    /**
+     * The main node of the JSON array. It is used only if `keepInMemory` is `true`.
+     */
     private JsonNode node;
-    private int fileCount;       // count in file (for total add cacheBuffered.size())
+    /**
+     * The instance's file. Where all items are stored permanently.
+     */
+    private final File jsonFile;
+    /**
+     * Number of items stored into the file.
+     */
+    private int fileCount;
+    /**
+     * First file's item (aka the OLDEST item stored).
+     */
     private T fileFirst = null;
+    /**
+     * Last file's item (aka the NEWST item stored).
+     */
     private T fileLast = null;
+    /**
+     * Max number of items that can be stored into the buffer before flush them into the buffer.
+     */
+    private int maxBufferSize;
+    /**
+     * Number of items to flush to the file, when the buffer is full.
+     */
+    private int releaseBufferSize;
+    /**
+     * Max number of items that can be stored into the file before delete them permanently.
+     */
+    private int maxFileSize;
+    /**
+     * Number of items to delete from the file, when the file is full.
+     */
+    private int releaseFileSize;
+    /**
+     * Internal flag used to avoid multiple auto flush at the same time.
+     */
+    private boolean isAutoFlushing = false;
+    /**
+     * Last exception occurred during auto flush procedure.
+     */
+    private FileException flushException = null;
 
 
     // Constructor
+
+    /**
+     * Create a new instance of JavaJSONArrayToFile.
+     *
+     * @param jsonFile     the file to store the JSON array.
+     * @param typeOfT      the type of JSON array content.
+     * @param keepInMemory if true, the file is read and stored in memory until
+     *                     the instance is destroyed. Otherwise, the file is
+     *                     read and stored in memory every time is needed.
+     * @throws FileException if file is not a JSON array.
+     */
+    public JavaJSONArrayToFile(File jsonFile, Class<T> typeOfT, boolean keepInMemory) throws FileException {
+        this(jsonFile, typeOfT, keepInMemory, DEF_MAX_BUFFER_SIZE, DEF_RELEASE_BUFFER_SIZE);
+    }
 
     /**
      * Create a new instance of JavaJSONArrayToFile.
@@ -91,69 +185,150 @@ public abstract class JavaJSONArrayToFile<T, K> {
      * If keepInMemory is false, then the file is read and stored in memory only
      * when needed.
      *
-     * @param jsonFile     the file to store the JSON array.
-     * @param typeOfT      the type of JSON array content.
-     * @param keepInMemory if true, the file is read and stored in memory.
+     * @param jsonFile          the file to store the JSON array.
+     * @param typeOfT           the type of JSON array content.
+     * @param keepInMemory      if true, the file is read and stored in memory until
+     *                          the instance is destroyed. Otherwise, the file is
+     *                          read and stored in memory every time is needed.
+     * @param maxBufferSize     the max number of items that can be stored into the buffer.
+     * @param releaseBufferSize the number of items that must be flushed to file when
+     *                          {@link #isAutoFlushEnabled()} is enabled.
      * @throws FileException if file is not a JSON array.
      */
-    public JavaJSONArrayToFile(File jsonFile, Class<T> typeOfT, boolean keepInMemory) throws FileException {
+    public JavaJSONArrayToFile(File jsonFile, Class<T> typeOfT, boolean keepInMemory, int maxBufferSize, int releaseBufferSize) throws FileException {
+        this(jsonFile, typeOfT, keepInMemory, maxBufferSize, releaseBufferSize, DEF_MAX_FILE_SIZE, DEF_RELEASE_FILE_SIZE);
+    }
+
+    /**
+     * Create a new instance of JavaJSONArrayToFile.
+     * <p>
+     * If keepInMemory is true, then the file is read and stored in memory.
+     * <p>
+     * If keepInMemory is false, then the file is read and stored in memory only
+     * when needed.
+     *
+     * @param jsonFile          the file to store the JSON array.
+     * @param typeOfT           the type of JSON array content.
+     * @param keepInMemory      if true, the file is read and stored in memory until
+     *                          the instance is destroyed. Otherwise, the file is
+     *                          read and stored in memory every time is needed.
+     * @param maxBufferSize     the max number of items that can be stored into the buffer.
+     * @param releaseBufferSize the number of items that must be flushed to file when
+     *                          {@link #isAutoFlushEnabled()} is enabled.
+     * @param maxFileSize       the max number of items that can be stored into the file.
+     * @param releaseFileSize   the number of items that must be flushed to file when
+     *                          {@link #isAutoFlushEnabled()} is enabled.
+     * @throws FileException if file is not a JSON array.
+     */
+    public JavaJSONArrayToFile(File jsonFile, Class<T> typeOfT, boolean keepInMemory, int maxBufferSize, int releaseBufferSize, int maxFileSize, int releaseFileSize) throws FileException {
+        this.typeOfT = typeOfT;
+
+        // setup instance buffer
+        this.cacheBuffered = new ArrayList<>();
+        this.keepInMemory = keepInMemory;
+        //this.node = ...initialized into getMainNode(), if needed
+
+        // setup instance file and his fields
         if (jsonFile == null)
             throw new IllegalArgumentException("JSON Array File can not be null");
         if (jsonFile.isDirectory())
             throw new IllegalArgumentException("JSON Array File can not be a directory");
-
-        this.cacheBuffered = new ArrayList<>();
-
-        this.jsonMapper = JsonMapper.builder().build();
         this.jsonFile = jsonFile;
-        this.keepInMemory = keepInMemory;
-        this.typeOfT = typeOfT;
-
-        initCache();
-    }
-
-
-    // Memory mngm
-
-    private void initCache() throws FileException {
+        ArrayNode array = getMainNode();
+        this.fileCount = array.size();
         try {
-            ArrayNode array = getMainNode();
-            fileCount = array.size();
             if (!array.isEmpty()) {
-                fileFirst = jsonMapper.readValue(array.get(0).traverse(), typeOfT);
-                fileLast = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
+                this.fileFirst = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
+                this.fileLast = jsonMapper.readValue(array.get(0).traverse(), typeOfT);
             }
-            //array = null;
-            printMemory_NoGC();
-            Runtime.getRuntime().gc();
-            printMemory_NoGC();
         } catch (StreamReadException | DatabindException e) {
             throw new FileException("Badly formatted json file", e);
         } catch (IOException e) {
             throw new FileException(String.format("Error reading file %s", jsonFile.getPath()), e);
         }
+        printTrack(String.format("PRE  INIT()         \tB(%2d)      F(%2d)", countBuffered(), countFile()));
+        //array = null;
+        freeGC();
+
+        // auto-flush params
+        if (maxBufferSize < releaseBufferSize)
+            throw new IllegalArgumentException("Param maxBufferSize can not be less than releaseBufferSize");
+        this.maxBufferSize = maxBufferSize;
+        this.releaseBufferSize = releaseBufferSize;
+        if (maxFileSize < releaseFileSize)
+            throw new IllegalArgumentException("Param maxFileSize can not be less than releaseFileSize");
+        this.maxFileSize = maxFileSize;
+        this.releaseFileSize = releaseFileSize;
     }
 
+
+    // Static File methods
+
+
+    /**
+     * Read and parse the main node of the given file as JSON array.
+     * <p>
+     * NB: This method is a heavy operation.
+     *
+     * @return the main node of the given file as JSON array.
+     * @throws FileException if some IO error occurs during file reading.
+     */
+    private static JsonNode readFile(File jsonFile) throws FileException {
+        printHeavyOpsStart(String.format("Reading file '%s'...", jsonFile.getPath()));
+        JsonNode newNode;
+        long startTime = System.currentTimeMillis();
+        try {
+            newNode = jsonMapper.readTree(jsonFile);
+            long endTime = System.currentTimeMillis();
+            printHeavyOpsEnd(String.format("File '%s' read in %-2f seconds (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, newNode.size()), newNode.size());
+        } catch (IOException e) {
+            long endTime = System.currentTimeMillis();
+            throw new FileException(String.format("Error reading file '%s' after %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0), e);
+        }
+        return newNode;
+    }
+
+    private static int writeFile(File jsonFile, ArrayNode array) throws FileException {
+        printHeavyOpsStart(String.format("Writing file '%s'...", jsonFile.getPath()));
+        long startTime = System.currentTimeMillis();
+        try {
+            jsonMapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile, array);
+        } catch (IOException e) {
+            long endTime = System.currentTimeMillis();
+            throw new FileException(String.format("Error writing file '%s' after %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0), e);
+        }
+        long endTime = System.currentTimeMillis();
+        int writtenCount = array.size();
+        //array = null;
+        freeGC();
+        printHeavyOpsEnd(String.format("File '%s' written in %-2f seconds (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, array.size()), array.size());
+
+        return writtenCount;
+    }
+
+
+    // Memory mngm
+
+    /**
+     * Return the main node of the file as JSON array.
+     * <p>
+     * If the instance is configured to keep the file in memory (`keepInMemory` = `true`),
+     * then, after the first read, the file is stored in memory and returned from memory.
+     * Otherwise, the file is read every time this method is called.
+     *
+     * @return the main node of the file as JSON array.
+     * @throws FileException if file is not a JSON array.
+     */
     private ArrayNode getMainNode() throws FileException {
         // Check if node is already in memory
         if (keepInMemory && node != null) return (ArrayNode) node;
 
         // Create new node with file content
         JsonNode newNode = null;
-        if (jsonFile.exists() && jsonFile.length() > 0) {
-            log.debug(String.format("HEAVY OPS: Reading file '%s'...", jsonFile.getPath()));
-            long startTime = System.currentTimeMillis();
-            try {
-                newNode = jsonMapper.readTree(jsonFile);
-                long endTime = System.currentTimeMillis();
-                log.warn(String.format("HEAVY OPS: File '%s' read in %-2f seconds (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, newNode.size()));
-            } catch (IOException e) {
-                long endTime = System.currentTimeMillis();
-                throw new FileException(String.format("Error reading file '%s' after %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0), e);
-            }
-        }
+        if (jsonFile.exists() && jsonFile.length() > 0)
+            newNode = readFile(this.jsonFile);
 
-        // Create new array node if file not exists or other problems
+        // Create new empty array node if file not exists or other problems
         if (newNode == null) newNode = jsonMapper.createArrayNode();
 
         // If read node is not an array, throw exception
@@ -166,63 +341,278 @@ public abstract class JavaJSONArrayToFile<T, K> {
         return (ArrayNode) newNode;
     }
 
+    /**
+     * Add an item to the cacheBuffered.
+     * <p>
+     * The item is added to the cacheBuffered and then, if the
+     * {@link #isAutoFlushEnabled()} is enabled, the cacheBuffered is flushed
+     * to file.
+     *
+     * @param value the item to add.
+     */
     public void append(T value) {
         synchronized (cacheBuffered) {
             cacheBuffered.add(value);
+            printTrack(String.format("PRE  append(T)      \tB(%2d)      F(%2d)", countBuffered(), countFile()));
+        }
+
+        tryAutoFlush();
+    }
+
+    private void tryAutoFlush() {
+        if (isAutoFlushEnabled()
+                && (countBuffered() >= maxBufferSize || countFile() >= maxFileSize)
+                && !isAutoFlushing) {
+            isAutoFlushing = true;
+            JavaThreads.initAndStart(new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (cacheBuffered) {
+                        try {
+                            int preBuffer = countBuffered();
+                            int preFile = countFile();
+                            flushCache();
+                            int postBuffer = countBuffered();
+                            int postFile = countFile();
+
+                            int flushed = preBuffer - postBuffer;
+                            int deleted = preFile - postFile + flushed;
+
+                            log.warn(String.format("AutoFlushed %d items from buffer and %d items deleted from file", flushed, deleted));
+                            log.debug(String.format("History buffered %d items on file %d", countBuffered(), countFile()));
+                        } catch (FileException e) {
+                            log.warn(String.format("Error accessing to the file from autoFlush process (%s).", e.getMessage()), e);
+                            flushException = e;
+                        } catch (Throwable e) {
+                            log.warn(String.format("Unknown exception from autoFlush process (%s).", e.getMessage()), e);
+                        }
+                        isAutoFlushing = false;
+                    }
+                }
+            }, "FLUSH_JSON_ARRAY", this.toString());
         }
     }
 
     public void storeCache() throws FileException {
-        flushCache(count());
+        flushCache(true);
+    }
+
+    public void flushCache() throws FileException {
+        flushCache(false);
+    }
+
+    public void flushCache(boolean flushAll) throws FileException {
+        synchronized (cacheBuffered) {
+            printTrack(String.format("PRE  flushCache(%b) \tB(%2d)      F(%2d)", flushAll, countBuffered(), countFile()));
+
+            if (flushAll && countBuffered() == 0) {
+                printTrack(String.format("POST flushCache(true) \tB(%2d)      F(%2d) Nothing to do because flushAll=True and no items on buffer", countBuffered(), countFile()));
+                return;
+            }
+            if (!flushAll && countBuffered() < maxBufferSize && countFile() < maxFileSize){
+                printTrack(String.format("POST flushCache(false) \tB(%2d)      F(%2d) Nothing to do because flushAll=False and buffer nor file exceed their sizes", countBuffered(), countFile()));
+                return;
+            }
+
+            // Get JSON array from file (or memory)
+            ArrayNode array = getMainNode();
+
+            // Flush items from cacheBuffered to JSON array
+            if (flushAll || countBuffered() >= maxBufferSize) {
+                // Items to flush = Actual size - Desired size
+                int toFlushCount = flushAll ? countBuffered() : countBuffered() - (maxBufferSize - releaseBufferSize);
+                printTrack(String.format("F    flushCache(%b) \tB(%2d) >%2d> F(%2d)", flushAll, countBuffered(), toFlushCount, countFile()));
+
+                // Flush to JSON Array (add to the beginning)
+                int addedCount = 0;
+                for (T v : cacheBuffered) {
+                    if (addedCount >= toFlushCount) break;
+                    array.insertPOJO(0, v);
+                    addedCount++;
+                }
+
+                // Remove from cacheBuffered
+                cacheBuffered.subList(0, addedCount).clear();
+
+                // Update file's properties
+                fileCount = array.size();
+                try {
+                    if (this.fileFirst == null)
+                        this.fileFirst = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
+                    this.fileLast = jsonMapper.readValue(array.get(0).traverse(), typeOfT);
+                } catch (Throwable ignore) {
+                }
+            }
+
+            // Delete items from JSON Array
+            if (countFile() >= maxFileSize) {
+                // Items to delete = Actual size - Desired size
+                int toDeleteCount = countFile() - (maxFileSize - releaseFileSize);
+                printTrack(String.format("D    flushCache(%b) \tB(%2d)      F(%2d) >> %d", flushAll, countBuffered(), countFile(), toDeleteCount));
+
+                // Delete from JSON Array (remove from the end)
+                int removedCount = 0;
+                for (int i = 0; i < toDeleteCount; i++) {
+                    if (array.isEmpty()) break;
+                    array.remove(array.size() - 1);
+                    removedCount++;
+                }
+
+                // Update file's properties
+                fileCount = array.size();
+                try {
+                    this.fileFirst = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
+                } catch (Throwable ignore) {
+                }
+            }
+
+            int writtenCount = writeFile(jsonFile, array);
+            assert fileCount == writtenCount;
+
+            printTrack(String.format("POST flushCache(%b) \tB(%2d)      F(%2d)", flushAll, countBuffered(), countFile()));
+        }
+    }
+
+
+    // Getters and Setters
+
+    /**
+     * @return true if the file is read and stored in memory until the instance
+     * is destroyed. Otherwise, the file is read and stored in memory
+     * every time is needed.
+     */
+    public boolean isKeepInMemory() {
+        return keepInMemory;
     }
 
     /**
-     * Flush cacheBuffered items to file.
+     * When enabled, the AutoFlush feature flushes the cacheBuffered to file
+     * when the number of items in cacheBuffered is greater than
+     * {@link #getReleaseBufferSize()}.<br/>
+     * Otherwise, the cacheBuffered is flushed to file only when
+     * {@link #flushCache()} or {@link #storeCache()} are called.
+     * <p>
+     * <b>NB:</b> The AutoFlush feature is enabled only when the
+     * {@link #getReleaseBufferSize()} is greater than `0`.
      *
-     * @param count number of items to flush.
-     * @return number of items flushed.
-     * @throws FileException if error writing file.
+     * @return true if auto flush is enabled.
      */
-    public int flushCache(int count) throws FileException {
-        if (cacheBuffered.isEmpty()) return 0;
-        if (count <= 0) return 0;
+    public boolean isAutoFlushEnabled() {
+        return releaseBufferSize > 0;
+    }
 
-        int countAdded = 0;
-        synchronized (cacheBuffered) {
-            ArrayNode array = getMainNode();
+    /**
+     * Return the max number of items that can be stored into the buffer.
+     * <p>
+     * This value is used only if {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @return the max number of items that can be stored into the buffer.
+     */
+    public int getMaxBufferSize() {
+        return maxBufferSize;
+    }
 
-            // for each item in cacheBuffered, or until countAdded == count
-            for (T v : cacheBuffered) {
-                array.insertPOJO(0, v);
-                countAdded++;
-                if (countAdded == count) break;
-            }
+    /**
+     * Set the max number of items that can be stored into the buffer.
+     * <p>
+     * This value is used only if {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @param maxBufferSize the max number of items that can be stored into the
+     *                      buffer.
+     */
+    public void setMaxBufferSize(int maxBufferSize) {
+        if (maxBufferSize < releaseBufferSize)
+            throw new IllegalArgumentException(String.format("Param maxBufferSize can not be less than releaseBufferSize ('%d' !< '%d')", maxBufferSize, releaseBufferSize));
+        this.maxBufferSize = maxBufferSize;
+        tryAutoFlush();
+    }
 
-            // Update internal vars
-            fileCount += countAdded;
-            if (fileFirst == null) fileFirst = getFirstBuffered();
-            fileLast = cacheBuffered.get(countAdded - 1);
+    /**
+     * Return the number of items that must be flushed to file when
+     * {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @return the number of items that can must be stored into the file.
+     */
+    public int getReleaseBufferSize() {
+        return releaseBufferSize;
+    }
 
-            // Write to file
-            log.debug(String.format("HEAVY OPS: Writing file '%s'...", jsonFile.getPath()));
-            long startTime = System.currentTimeMillis();
-            try {
-                jsonMapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile, array);
-            } catch (IOException e) {
-                long endTime = System.currentTimeMillis();
-                throw new FileException(String.format("Error writing file '%s' after %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0), e);
-            }
-            long endTime = System.currentTimeMillis();
-            //array = null;
-            printMemory_NoGC();
-            Runtime.getRuntime().gc();
-            printMemory_NoGC();
-            log.warn(String.format("HEAVY OPS: File '%s' written in %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0));
+    /**
+     * Set the number of items that must be flushed to file when
+     * {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @param releaseBufferSize the number of items that can must be stored into
+     *                          the file.
+     */
+    public void setReleaseBufferSize(int releaseBufferSize) {
+        if (releaseBufferSize > maxBufferSize)
+            throw new IllegalArgumentException(String.format("Param releaseBufferSize can not be greater than maxBufferSize ('%d' !> '%d')", releaseBufferSize, maxBufferSize));
+        this.releaseBufferSize = releaseBufferSize;
+    }
 
-            // Remove from cacheBuffered the added items
-            cacheBuffered.subList(0, countAdded).clear();
-        }
-        return countAdded;
+    /**
+     * Return the max number of items that can be stored into the file.
+     * <p>
+     * This value is used only if {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @return the max number of items that can be stored into the file.
+     */
+    public int getMaxFileSize() {
+        return maxFileSize;
+    }
+
+    /**
+     * Set the max number of items that can be stored into the file.
+     * <p>
+     * This value is used only if {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @param maxFileSize the max number of items that can be stored into the
+     *                    file.
+     */
+    public void setMaxFileSize(int maxFileSize) {
+        if (maxFileSize < releaseFileSize)
+            throw new IllegalArgumentException(String.format("Param maxFileSize can not be less than releaseFileSize ('%d' !< '%d')", maxFileSize, releaseFileSize));
+        this.maxFileSize = maxFileSize;
+        tryAutoFlush();
+    }
+
+    /**
+     * Return the number of items that must be flushed to file when
+     * {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @return the number of items that can must be stored into the file.
+     */
+    public int getReleaseFileSize() {
+        return releaseFileSize;
+    }
+
+    /**
+     * Set the number of items that must be flushed to file when
+     * {@link #isAutoFlushEnabled()} is enabled.
+     *
+     * @param releaseFileSize the number of items that can must be stored into
+     *                        the file.
+     */
+    public void setReleaseFileSize(int releaseFileSize) {
+        if (releaseFileSize > maxFileSize)
+            throw new IllegalArgumentException(String.format("Param releaseFileSize can not be greater than maxFileSize ('%d' !> '%d')", releaseFileSize, maxFileSize));
+        this.releaseFileSize = releaseFileSize;
+    }
+
+    /**
+     * When the {@link #isAutoFlushEnabled()} is enabled, this class starts
+     * a new thread to flush the items. If the flush fails, then the exception
+     * is stored into this var.
+     * <p>
+     * <b>NB:</b> after the exception is read, it is set to null.
+     *
+     * @return the exception thrown by the flush thread. `null` if no exception
+     * was thrown.
+     */
+    public FileException getLastFlushException() {
+        FileException t = flushException;
+        flushException = null;
+        return t;
     }
 
 
@@ -264,8 +654,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
      * @return the first item in cacheBuffered.
      */
     public T getFirstBuffered() {
-        if (!cacheBuffered.isEmpty()) return cacheBuffered.get(0);
-        return null;
+        return cacheBuffered.isEmpty() ? null : cacheBuffered.get(0);
     }
 
     /**
@@ -290,9 +679,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
      * @return the last item in cacheBuffered.
      */
     public T getLastBuffered() {
-        if (!cacheBuffered.isEmpty())
-            return cacheBuffered.get(cacheBuffered.size() - 1);
-        return null;
+        return cacheBuffered.isEmpty() ? null : cacheBuffered.get(cacheBuffered.size() - 1);
     }
 
     /**
@@ -360,7 +747,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         List<T> filtered = new ArrayList<>();
         ArrayNode array = getMainNode();
 
-        log.debug(String.format("HEAVY OPS: Scanning file '%s' (filterAllFile)...", jsonFile.getPath()));
+        printHeavyOpsStart(String.format("Scanning file '%s' (filterAllFile)...", jsonFile.getPath()));
         long startTime = System.currentTimeMillis();
         for (Iterator<JsonNode> i = array.elements(); i.hasNext(); ) {
             JsonNode node = i.next();
@@ -376,10 +763,8 @@ public abstract class JavaJSONArrayToFile<T, K> {
         }
         long endTime = System.currentTimeMillis();
         //array = null;
-        printMemory_NoGC();
-        Runtime.getRuntime().gc();
-        printMemory_NoGC();
-        log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterAllFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
+        freeGC();
+        printHeavyOpsEnd(String.format("File '%s' scanned in %-2f seconds (filterAllFile) (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, countFile()), countFile());
 
         return filtered;
     }
@@ -419,7 +804,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         List<T> filtered = new ArrayList<>();
         ArrayNode array = getMainNode();
 
-        log.debug(String.format("HEAVY OPS: Scanning file '%s' (filterLatestFile)...", jsonFile.getPath()));
+        printHeavyOpsStart(String.format("Scanning file '%s' (filterLatestFile)...", jsonFile.getPath()));
         long startTime = System.currentTimeMillis();
         for (Iterator<JsonNode> i = array.elements(); i.hasNext(); ) {
             JsonNode node = i.next();
@@ -438,10 +823,8 @@ public abstract class JavaJSONArrayToFile<T, K> {
         }
         long endTime = System.currentTimeMillis();
         //array = null;
-        printMemory_NoGC();
-        Runtime.getRuntime().gc();
-        printMemory_NoGC();
-        log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterLatestFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
+        freeGC();
+        printHeavyOpsEnd(String.format("File '%s' scanned in %-2f seconds (filterLatestFile) (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, countFile()), countFile());
         return filtered;
     }
 
@@ -479,7 +862,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         List<T> filtered = new ArrayList<>();
         ArrayNode array = getMainNode();
 
-        log.debug(String.format("HEAVY OPS: Scanning file '%s'...", jsonFile.getPath()));
+        printHeavyOpsStart(String.format("Scanning file '%s'...", jsonFile.getPath()));
         long startTime = System.currentTimeMillis();
         long ancientCountLoop = ancientCount;
         for (int i = array.size() - 1; i >= 0; i--) {
@@ -488,7 +871,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
             try {
                 o = jsonMapper.readValue(node.traverse(), typeOfT);
             } catch (IOException e) {
-                throw new FileException("error reading file", e);
+                throw new FileException("Error reading file", e);
             }
 
             if (filter.accepted(o)) {
@@ -498,10 +881,8 @@ public abstract class JavaJSONArrayToFile<T, K> {
         }
         long endTime = System.currentTimeMillis();
         //array = null;
-        printMemory_NoGC();
-        Runtime.getRuntime().gc();
-        printMemory_NoGC();
-        log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0));
+        freeGC();
+        printHeavyOpsEnd(String.format("File '%s' scanned in %-2f seconds (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, countFile()), countFile());
         return filtered;
     }
 
@@ -529,7 +910,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         List<T> filtered = filterByIdFile(filter, fromId, toId);
 
         // If LastBufElem < toId
-        if (toId == null || (getLastBuffered() != null && compareItemIds(getItemId(getFirstBuffered()), toId) < 0))
+        if (toId == null || (getLastBuffered() != null && compareItemIds(getItemId(getFirstBuffered()), toId) <= 0))
             // Filter also buffered items
             filtered.addAll(filterByIdBuffered(filter, fromId, toId));
 
@@ -557,7 +938,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         List<T> range = new ArrayList<>();
         ArrayNode array = getMainNode();
 
-        log.debug(String.format("HEAVY OPS: Scanning file '%s' (filterByIdFile)...", jsonFile.getPath()));
+        printHeavyOpsStart(String.format("Scanning file '%s' (filterByIdFile)...", jsonFile.getPath()));
         long startTime = System.currentTimeMillis();
         // Until v.id < fromId
         for (Iterator<JsonNode> i = array.elements(); i.hasNext(); ) {
@@ -579,10 +960,8 @@ public abstract class JavaJSONArrayToFile<T, K> {
         }
         long endTime = System.currentTimeMillis();
         //array = null;
-        printMemory_NoGC();
-        Runtime.getRuntime().gc();
-        printMemory_NoGC();
-        log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterByIdFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
+        freeGC();
+        printHeavyOpsEnd(String.format("File '%s' scanned in %-2f seconds (filterByIdFile) (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, countFile()), countFile());
 
         // todo check reverse
         Collections.reverse(range);
@@ -603,7 +982,6 @@ public abstract class JavaJSONArrayToFile<T, K> {
 
     public List<T> filterByDate(Filter<T> filter, Date fromDate, Date toDate) throws FileException {
         if (count() == 0) return new ArrayList<>();
-
 
         List<T> filtered = filterByDateBuffered(filter, fromDate, toDate);
         filtered.addAll(filterByDateFile(filter, fromDate, toDate));
@@ -651,7 +1029,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         List<T> range = new ArrayList<>();
         ArrayNode array = getMainNode();
 
-        log.debug(String.format("HEAVY OPS: Scanning file '%s' (filterByDateFile)...", jsonFile.getPath()));
+        printHeavyOpsStart(String.format("Scanning file '%s' (filterByDateFile)...", jsonFile.getPath()));
         long startTime = System.currentTimeMillis();
         // Until v.date < fromDate
         for (Iterator<JsonNode> i = array.elements(); i.hasNext(); ) {
@@ -673,16 +1051,28 @@ public abstract class JavaJSONArrayToFile<T, K> {
         }
         long endTime = System.currentTimeMillis();
         //array = null;
-        printMemory_NoGC();
-        Runtime.getRuntime().gc();
-        printMemory_NoGC();
-        log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterByDateFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
+        freeGC();
+        printHeavyOpsEnd(String.format("File '%s' scanned in %-2f seconds (filterByDateFile) (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, countFile()), countFile());
 
         // todo check reverse
         Collections.reverse(range);
         return range;
     }
 
+
+    // Utils
+
+    private static void printTrack(String msg) {
+        if (PRINT_TRACK) log.warn("TRACK_JSONArrayToFile " + msg);
+    }
+
+    private static void printHeavyOpsStart(String msg) {
+        if (PRINT_HEAVY_OPS) log.warn("HEAVY OPS: " + msg);
+    }
+
+    private static void printHeavyOpsEnd(String msg, int count) {
+        if (PRINT_HEAVY_OPS && count > PRINT_HEAVY_OPS_MIN_COUNT) log.warn("HEAVY OPS: " + msg);
+    }
 
     // Sub class utils
 
@@ -713,18 +1103,28 @@ public abstract class JavaJSONArrayToFile<T, K> {
 
     }
 
-    int SIZE = 1024; // KBytes
-    DecimalFormat formatter = new DecimalFormat("#,###");
-    void printMemory_NoGC() {
+
+    // Static GC methods
+
+    private static void freeGC() {
+        printMemory_NoGC();
+        Runtime.getRuntime().gc();
+        printMemory_NoGC();
+    }
+
+    private static void printMemory_NoGC() {
+        int SIZE = 1024; // KBytes
+        DecimalFormat formatter = new DecimalFormat("#,###");
+
         long tot_mem = Runtime.getRuntime().totalMemory() / SIZE;
         long free_mem = Runtime.getRuntime().freeMemory() / SIZE;
         long used_mem = tot_mem - free_mem;
         long max_mem = Runtime.getRuntime().maxMemory() / SIZE;
 
         log.debug("HEAVY OPS: Tot: " + formatter.format(tot_mem) +
-                        "\tFree: " + formatter.format(free_mem) +
-                        "\tUsed: " + formatter.format(used_mem) +
-                        "\tMax: " + formatter.format(max_mem)
+                "\tFree: " + formatter.format(free_mem) +
+                "\tUsed: " + formatter.format(used_mem) +
+                "\tMax: " + formatter.format(max_mem)
         );
     }
 
