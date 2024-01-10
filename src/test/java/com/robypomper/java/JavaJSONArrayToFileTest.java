@@ -1,0 +1,608 @@
+package com.robypomper.java;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.junit.jupiter.api.Test;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class JavaJSONArrayToFileTest {
+
+    public static class TestJavaJSONArrayToFile extends JavaJSONArrayToFile<String, Integer> {
+
+        public TestJavaJSONArrayToFile(File jsonFile, boolean keepInMemory) throws FileException {
+            super(jsonFile, String.class, keepInMemory);
+        }
+
+        @Override
+        protected int compareItemIds(Integer id1, Integer id2) {
+            return id1.compareTo(id2);
+        }
+
+        @Override
+        protected Integer getItemId(String value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        protected Date getItemDate(String value) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    class TestData {
+
+        private final long id;
+        private final Date updatedAt;
+        private final String payload;
+
+        public TestData(long id, Date updatedAt, String payload) {
+            this.id = id;
+            this.updatedAt = updatedAt;
+            this.payload = payload;
+        }
+
+
+        // Getters
+
+        public long getId() {
+            return id;
+        }
+
+        public Date getUpdatedAt() {
+            return updatedAt;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
+
+    }
+
+    class TestDataJavaJSONArrayToFile extends JavaJSONArrayToFile<TestData, Long> {
+
+        public TestDataJavaJSONArrayToFile(File jsonFile, boolean keepInMemory) throws FileException {
+            super(jsonFile, TestData.class, keepInMemory);
+        }
+
+        @Override
+        protected int compareItemIds(Long id1, Long id2) {
+            return id1.compareTo(id2);
+        }
+
+        @Override
+        protected Long getItemId(TestData value) {
+            return value.getId();
+        }
+
+        @Override
+        protected Date getItemDate(TestData value) {
+            return value.getUpdatedAt();
+        }
+    }
+
+    @Test
+    void testConstructor() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        assertNotNull(arrayToFile);
+    }
+
+    @Test
+    void testConstructor_IllegalJSONFileAsNull() {
+        File jsonFile = null;
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            new TestJavaJSONArrayToFile(jsonFile, true);
+        });
+        String expectedMessage = "JSON Array File can not be null";
+        String actualMessage = exception.getMessage();
+        assertEquals(actualMessage, expectedMessage);
+    }
+
+    @Test
+    void testConstructor_IllegalJSONFileAsDir() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json").getParentFile();
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            new TestJavaJSONArrayToFile(jsonFile, true);
+        });
+        String expectedMessage = "JSON Array File can not be a directory";
+        String actualMessage = exception.getMessage();
+        assertEquals(actualMessage, expectedMessage);
+    }
+
+    @Test
+    void testConstructor_EmptyFile() throws IOException, JavaJSONArrayToFile.FileException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
+        writer.write("");
+        writer.close();
+
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        assertNotNull(arrayToFile);
+        assertEquals(0, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+    }
+
+    @Test
+    void testConstructor_EmptyArray() throws IOException, JavaJSONArrayToFile.FileException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
+        writer.write("[]");
+        writer.close();
+
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        assertNotNull(arrayToFile);
+        assertEquals(0, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+    }
+
+    @Test
+    void testConstructor_Array5Items() throws IOException, JavaJSONArrayToFile.FileException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
+        writer.write("[\"1\",\"2\",\"3\",\"4\",\"5\"]");
+        writer.close();
+
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        assertNotNull(arrayToFile);
+        assertEquals(5, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(5, arrayToFile.countFile());
+    }
+
+    @Test
+    void testConstructor_FileExceptionNotAnArray() throws IOException, JavaJSONArrayToFile.FileException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
+        writer.write("\"1\",\"2\",\"3\",\"4\",\"5\"");
+        writer.close();
+
+        Exception exception = assertThrows(JavaJSONArrayToFile.FileException.class, () -> {
+            new TestJavaJSONArrayToFile(jsonFile, true);
+        });
+        String expectedPartialMessage = "Error reading file";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedPartialMessage));
+    }
+
+    @Test
+    void testConstructor_FileExceptionBadFormatted() throws IOException, JavaJSONArrayToFile.FileException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile));
+        writer.write("[\"1\",{\"2\"},\"3\",\"4\",\"5\"]");
+        writer.close();
+
+        Exception exception = assertThrows(JavaJSONArrayToFile.FileException.class, () -> {
+            new TestJavaJSONArrayToFile(jsonFile, true);
+        });
+        String expectedPartialMessage = "Error reading file";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedPartialMessage));
+    }
+
+
+    @Test
+    void testAppend() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        arrayToFile.append("test");
+        assertEquals(1, arrayToFile.count());
+    }
+    @Test
+    void testAppend_FileWriteFail() throws IOException {
+        //File jsonFile = File.createTempFile("data_empty", ".json");
+        File jsonFile = new File("/root/test.json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        arrayToFile.append("test");
+
+        Exception exception = assertThrows(JavaJSONArrayToFile.FileException.class, () -> {
+            arrayToFile.storeCache();
+        });
+        String expectedPartialMessage = "Error writing file";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedPartialMessage));
+    }
+
+
+    @Test
+    void testStorage_FlushFull() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        arrayToFile.append("test");
+
+        assertEquals(1, arrayToFile.count());
+        assertEquals(1, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        arrayToFile.flushCache(1);
+
+        assertEquals(1, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(1, arrayToFile.count());
+    }
+
+    @Test
+    void testStorage_FlushPartial() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+        arrayToFile.append("test5");
+
+        assertEquals(5, arrayToFile.count());
+        assertEquals(5, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        arrayToFile.flushCache(3);
+
+        assertEquals(5, arrayToFile.count());
+        assertEquals(2, arrayToFile.countBuffered());
+        assertEquals(3, arrayToFile.countFile());
+    }
+
+    @Test
+    void testStorage_StoreSingleItem() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        arrayToFile.append("test");
+
+        assertEquals(1, arrayToFile.count());
+        assertEquals(1, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        arrayToFile.storeCache();
+
+        assertEquals(1, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(1, arrayToFile.count());
+    }
+
+    @Test
+    void testStorage_StoreManyItems() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+        arrayToFile.append("test5");
+
+        assertEquals(5, arrayToFile.count());
+        assertEquals(5, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        arrayToFile.storeCache();
+
+        assertEquals(5, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(5, arrayToFile.count());
+    }
+
+    @Test
+    void testStorage_StorePartial() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+        arrayToFile.append("test5");
+        arrayToFile.flushCache(3);
+
+        assertEquals(5, arrayToFile.count());
+        assertEquals(2, arrayToFile.countBuffered());
+        assertEquals(3, arrayToFile.countFile());
+
+        arrayToFile.storeCache();
+
+        assertEquals(5, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(5, arrayToFile.count());
+    }
+
+
+    @Test
+    void testCountMethods() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        assertEquals(0, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        assertEquals(3, arrayToFile.count());
+        assertEquals(3, arrayToFile.countBuffered());
+        assertEquals(0, arrayToFile.countFile());
+
+        // 1 item in buffer, 2 items into file
+        arrayToFile.flushCache(2);
+        assertEquals(3, arrayToFile.count());
+        assertEquals(1, arrayToFile.countBuffered());
+        assertEquals(2, arrayToFile.countFile());
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        assertEquals(3, arrayToFile.count());
+        assertEquals(0, arrayToFile.countBuffered());
+        assertEquals(3, arrayToFile.countFile());
+
+    }
+
+    @Test
+    void testGetFirstMethods() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        assertNull(arrayToFile.getFirst());
+        assertNull(arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test1", arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        // 1 item in buffer, 2 items into file
+        arrayToFile.flushCache(2);
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertEquals("test1", arrayToFile.getFirstFile());
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        assertEquals("test1", arrayToFile.getFirst());
+        assertNull(arrayToFile.getFirstBuffered());
+        assertEquals("test1", arrayToFile.getFirstFile());
+    }
+
+    @Test
+    void testGetLastMethods() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        assertNull(arrayToFile.getLast());
+        assertNull(arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        assertEquals("test3", arrayToFile.getLast());
+        assertEquals("test3", arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+
+        // 1 item in buffer, 2 items into file
+        arrayToFile.flushCache(2);
+        assertEquals("test3", arrayToFile.getLast());
+        assertEquals("test3", arrayToFile.getLastBuffered());
+        assertEquals("test2", arrayToFile.getLastFile());
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        assertEquals("test3", arrayToFile.getLast());
+        assertNull(arrayToFile.getLastBuffered());
+        assertEquals("test3", arrayToFile.getLastFile());
+    }
+
+    @Test
+    void testGetMethods() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        List<String> all = arrayToFile.getAll();
+        assertNotNull(all);
+        assertEquals(0, all.size());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        all = arrayToFile.getAll();
+        assertEquals(3, all.size());
+        assertTrue(all.contains("test1"));
+        assertTrue(all.contains("test2"));
+        assertTrue(all.contains("test3"));
+
+        // 1 item in buffer, 2 items into file
+        arrayToFile.flushCache(2);
+        all = arrayToFile.getAll();
+        assertEquals(3, all.size());
+        assertTrue(all.contains("test1"));
+        assertTrue(all.contains("test2"));
+        assertTrue(all.contains("test3"));
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        all = arrayToFile.getAll();
+        assertEquals(3, all.size());
+        assertTrue(all.contains("test1"));
+        assertTrue(all.contains("test2"));
+        assertTrue(all.contains("test3"));
+    }
+
+
+    @Test
+    void testGetLatestMethod() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        List<String> latest = arrayToFile.getLatest(2);
+        assertNotNull(latest);
+        assertEquals(0, latest.size());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        latest = arrayToFile.getLatest(2);
+        assertEquals(2, latest.size());
+        assertTrue(latest.contains("test2"));
+        assertTrue(latest.contains("test3"));
+
+        // 1 item in buffer, 2 items into file
+        arrayToFile.flushCache(2);
+        latest = arrayToFile.getLatest(2);
+        assertEquals(2, latest.size());
+        assertTrue(latest.contains("test2"));
+        assertTrue(latest.contains("test3"));
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        latest = arrayToFile.getLatest(2);
+        assertEquals(2, latest.size());
+        assertTrue(latest.contains("test2"));
+        assertTrue(latest.contains("test3"));
+    }
+
+    @Test
+    void testGetAncientMethod() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        List<TestData> ancient = arrayToFile.getAncient(2);
+        assertNotNull(ancient);
+        assertEquals(0, ancient.size());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append(new TestData(1, new Date(1000), "test1"));
+        arrayToFile.append(new TestData(2, new Date(2000), "test2"));
+        arrayToFile.append(new TestData(3, new Date(3000), "test3"));
+        ancient = arrayToFile.getAncient(2);
+        assertEquals(2, ancient.size());
+        assertEquals(1, ancient.get(0).getId());
+        assertEquals(2, ancient.get(1).getId());
+
+        // 1 item in buffer, 2 items into file
+        arrayToFile.flushCache(2);
+        ancient = arrayToFile.getAncient(2);
+        assertEquals(2, ancient.size());
+        assertEquals(1, ancient.get(0).getId());
+        assertEquals(2, ancient.get(1).getId());
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        ancient = arrayToFile.getAncient(2);
+        assertEquals(2, ancient.size());
+        assertEquals(1, ancient.get(0).getId());
+        assertEquals(2, ancient.get(1).getId());
+    }
+
+    @Test
+    void testGetByIdMethod() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        List<TestData> byId = arrayToFile.getById(1L, 2L);
+        assertNotNull(byId);
+        assertEquals(0, byId.size());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append(new TestData(1, new Date(1000), "test1"));
+        arrayToFile.append(new TestData(2, new Date(2000), "test2"));
+        arrayToFile.append(new TestData(3, new Date(3000), "test3"));
+        byId = arrayToFile.getById(1L, 2L);
+        assertEquals(2, byId.size());
+        assertEquals(1, byId.get(0).getId());
+        assertEquals(2, byId.get(1).getId());
+
+        // 1 item in buffer, 2 items into file
+        // 2 items from file
+        arrayToFile.flushCache(2);
+        byId = arrayToFile.getById(1L, 2L);
+        assertEquals(2, byId.size());
+        assertEquals(1, byId.get(0).getId());
+        assertEquals(2, byId.get(1).getId());
+
+        // 1 item in buffer, 2 items into file
+        // 1 item from buffer, 1 item from file
+        arrayToFile.flushCache(2);
+        byId = arrayToFile.getById(2L, 3L);
+        assertEquals(2, byId.size());
+        assertEquals(2, byId.get(0).getId());
+        assertEquals(3, byId.get(1).getId());
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        byId = arrayToFile.getById(1L, 2L);
+        assertEquals(2, byId.size());
+        assertEquals(1, byId.get(0).getId());
+        assertEquals(2, byId.get(1).getId());
+    }
+
+    @Test
+    void testGetByDataMethod() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestDataJavaJSONArrayToFile arrayToFile = new TestDataJavaJSONArrayToFile(jsonFile, true);
+
+        // no data
+        Date fromDate = new Date(0);
+        Date toDate = new Date(2000);
+        List<TestData> byData = arrayToFile.getByData(fromDate, toDate);
+        assertNotNull(byData);
+        assertEquals(0, byData.size());
+
+        // 3 items in buffer, 0 items into file
+        arrayToFile.append(new TestData(1, new Date(1000), "test1"));
+        arrayToFile.append(new TestData(2, new Date(2000), "test2"));
+        arrayToFile.append(new TestData(3, new Date(3000), "test3"));
+        byData = arrayToFile.getByData(fromDate, toDate);
+        assertEquals(2, byData.size());
+        assertEquals(1, byData.get(0).getId());
+        assertEquals(2, byData.get(1).getId());
+
+        // 1 item in buffer, 2 items into file
+        // 2 items from file
+        arrayToFile.flushCache(2);
+        byData = arrayToFile.getByData(fromDate, toDate);
+        assertEquals(2, byData.size());
+        assertEquals(1, byData.get(0).getId());
+        assertEquals(2, byData.get(1).getId());
+
+        // 1 item in buffer, 2 items into file
+        // 1 item from buffer, 1 item from file
+        arrayToFile.flushCache(2);
+        byData = arrayToFile.getByData(new Date(fromDate.getTime() + 1001), new Date(toDate.getTime() + 1000));
+        assertEquals(2, byData.size());
+        assertEquals(2, byData.get(0).getId());
+        assertEquals(3, byData.get(1).getId());
+
+        // 0 items in buffer, 3 items into file
+        arrayToFile.storeCache();
+        byData = arrayToFile.getByData(fromDate, toDate);
+        assertEquals(2, byData.size());
+        assertEquals(1, byData.get(0).getId());
+        assertEquals(2, byData.get(1).getId());
+    }
+
+}
