@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.*;
 
 
@@ -122,6 +123,10 @@ public abstract class JavaJSONArrayToFile<T, K> {
                 fileFirst = jsonMapper.readValue(array.get(0).traverse(), typeOfT);
                 fileLast = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
             }
+            //array = null;
+            printMemory_NoGC();
+            Runtime.getRuntime().gc();
+            printMemory_NoGC();
         } catch (StreamReadException | DatabindException e) {
             throw new FileException("Badly formatted json file", e);
         } catch (IOException e) {
@@ -208,6 +213,10 @@ public abstract class JavaJSONArrayToFile<T, K> {
                 throw new FileException(String.format("Error writing file '%s' after %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0), e);
             }
             long endTime = System.currentTimeMillis();
+            //array = null;
+            printMemory_NoGC();
+            Runtime.getRuntime().gc();
+            printMemory_NoGC();
             log.warn(String.format("HEAVY OPS: File '%s' written in %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0));
 
             // Remove from cacheBuffered the added items
@@ -366,6 +375,10 @@ public abstract class JavaJSONArrayToFile<T, K> {
             if (filter.accepted(o)) filtered.add(o);
         }
         long endTime = System.currentTimeMillis();
+        //array = null;
+        printMemory_NoGC();
+        Runtime.getRuntime().gc();
+        printMemory_NoGC();
         log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterAllFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
 
         return filtered;
@@ -424,8 +437,11 @@ public abstract class JavaJSONArrayToFile<T, K> {
             }
         }
         long endTime = System.currentTimeMillis();
+        //array = null;
+        printMemory_NoGC();
+        Runtime.getRuntime().gc();
+        printMemory_NoGC();
         log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterLatestFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
-
         return filtered;
     }
 
@@ -481,8 +497,11 @@ public abstract class JavaJSONArrayToFile<T, K> {
             }
         }
         long endTime = System.currentTimeMillis();
+        //array = null;
+        printMemory_NoGC();
+        Runtime.getRuntime().gc();
+        printMemory_NoGC();
         log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds", jsonFile.getPath(), (endTime - startTime) / 1000.0));
-
         return filtered;
     }
 
@@ -559,6 +578,10 @@ public abstract class JavaJSONArrayToFile<T, K> {
             if (store && filter.accepted(o)) range.add(o);
         }
         long endTime = System.currentTimeMillis();
+        //array = null;
+        printMemory_NoGC();
+        Runtime.getRuntime().gc();
+        printMemory_NoGC();
         log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterByIdFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
 
         // todo check reverse
@@ -649,6 +672,10 @@ public abstract class JavaJSONArrayToFile<T, K> {
             if (store && filter.accepted(o)) range.add(o);
         }
         long endTime = System.currentTimeMillis();
+        //array = null;
+        printMemory_NoGC();
+        Runtime.getRuntime().gc();
+        printMemory_NoGC();
         log.warn(String.format("HEAVY OPS: File '%s' scanned in %-2f seconds (filterByDateFile)", jsonFile.getPath(), (endTime - startTime) / 1000.0));
 
         // todo check reverse
@@ -684,6 +711,21 @@ public abstract class JavaJSONArrayToFile<T, K> {
             super(detailMessage, cause);
         }
 
+    }
+
+    int SIZE = 1024; // KBytes
+    DecimalFormat formatter = new DecimalFormat("#,###");
+    void printMemory_NoGC() {
+        long tot_mem = Runtime.getRuntime().totalMemory() / SIZE;
+        long free_mem = Runtime.getRuntime().freeMemory() / SIZE;
+        long used_mem = tot_mem - free_mem;
+        long max_mem = Runtime.getRuntime().maxMemory() / SIZE;
+
+        log.debug("HEAVY OPS: Tot: " + formatter.format(tot_mem) +
+                        "\tFree: " + formatter.format(free_mem) +
+                        "\tUsed: " + formatter.format(used_mem) +
+                        "\tMax: " + formatter.format(max_mem)
+        );
     }
 
 }
