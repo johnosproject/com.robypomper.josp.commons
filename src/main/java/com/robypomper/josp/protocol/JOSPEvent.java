@@ -166,6 +166,8 @@ public class JOSPEvent {
         String phase = eventStrs[5].substring(eventStrs[5].indexOf(":") + 1);
         String payload = eventStrs[6].substring(eventStrs[6].indexOf(":") + 1);
         String errorPayload = eventStrs[7].substring(eventStrs[7].indexOf(":") + 1);
+        if (errorPayload.equals("null"))
+            errorPayload = null;
 
         try {
             return new JOSPEvent(Long.parseLong(id), EventType.valueOf(type), srcId, AgentType.valueOf(srcType), JavaDate.DEF_DATE_FORMATTER.parse(emittedAt), phase, payload, errorPayload);

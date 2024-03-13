@@ -48,7 +48,8 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation sourceSets.main.output
     testImplementation sourceSets.main.runtimeClasspath
-    testRuntimeOnly "org.slf4j:slf4j-nop:${project.ext.get("version.slf4j")}"
+    testRuntimeOnly "org.slf4j:slf4j-nop:${project.ext.get("version.slf4j")}"       // comment to enable logs during test
+    //testRuntimeOnly "org.slf4j:slf4j-simple:${project.ext.get("version.slf4j")}"  // de-comment to enable logs during test
 }
 
 
