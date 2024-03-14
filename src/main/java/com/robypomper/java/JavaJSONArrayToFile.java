@@ -107,8 +107,12 @@ public abstract class JavaJSONArrayToFile<T, K> {
      * The type of JSON array content.
      */
     private final Class<T> typeOfT;
+    /** The observer of this instance. */
+    private Observer<T> observer;
     /**
      * The instance's buffer. Where all items are stored before be flushed into the file.
+     * <p>
+     * Items are added to the end of the list and removed from the beginning.
      */
     private final List<T> cacheBuffered;
     /**
@@ -117,6 +121,8 @@ public abstract class JavaJSONArrayToFile<T, K> {
     private final boolean keepInMemory;
     /**
      * The main node of the JSON array. It is used only if `keepInMemory` is `true`.
+     * <p>
+     * Items are added to the beginning of the file and deleted from the end.
      */
     private JsonNode node;
     /**
@@ -151,6 +157,8 @@ public abstract class JavaJSONArrayToFile<T, K> {
      * Number of items to delete from the file, when the file is full.
      */
     private int releaseFileSize;
+    /** The thread that is executing (or executed) the auto flush procedure, if any. */
+    private Thread autoThread = null;
     /**
      * Internal flag used to avoid multiple auto flush at the same time.
      */
@@ -159,6 +167,36 @@ public abstract class JavaJSONArrayToFile<T, K> {
      * Last exception occurred during auto flush procedure.
      */
     private FileException flushException = null;
+
+
+    // Observer interface
+
+    public interface Observer<T> {
+
+        /**
+         * Called when items are added to the array.
+         *
+         * @param items the items added.
+         */
+        void onAdded(List<T> items);
+
+        /**
+         * Called when items are flushed to the file.
+         *
+         * @param items the items flushed.
+         * @param auto true if the flush was performed by the auto flush procedure.
+         */
+        void onFlushed(List<T> items, boolean auto);
+
+        /**
+         * Called when items are removed from the file.
+         *
+         * @param items the items removed.
+         * @param auto true if the remove was performed by the auto flush procedure.
+         */
+        void onRemoved(List<T> items, boolean auto);
+
+    }
 
 
     // Constructor
@@ -235,17 +273,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
             throw new IllegalArgumentException("JSON Array File can not be a directory");
         this.jsonFile = jsonFile;
         ArrayNode array = getMainNode();
-        this.fileCount = array.size();
-        try {
-            if (!array.isEmpty()) {
-                this.fileFirst = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
-                this.fileLast = jsonMapper.readValue(array.get(0).traverse(), typeOfT);
-            }
-        } catch (StreamReadException | DatabindException e) {
-            throw new FileException("Badly formatted json file", e);
-        } catch (IOException e) {
-            throw new FileException(String.format("Error reading file %s", jsonFile.getPath()), e);
-        }
+        updateFileProperties(array);
         printTrack(String.format("PRE  INIT()         \tB(%2d)      F(%2d)", countBuffered(), countFile()));
         //array = null;
         freeGC();
@@ -261,6 +289,25 @@ public abstract class JavaJSONArrayToFile<T, K> {
         this.releaseFileSize = releaseFileSize;
     }
 
+
+    private void updateFileProperties(ArrayNode array) throws FileException {
+        if (array == null || array.isEmpty()) {
+            fileCount = 0;
+            this.fileFirst = null;
+            this.fileLast = null;
+            return;
+        }
+
+        this.fileCount = array.size();
+        try {
+            this.fileFirst = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
+            this.fileLast = jsonMapper.readValue(array.get(0).traverse(), typeOfT);
+        } catch (StreamReadException | DatabindException e) {
+            throw new FileException("Badly formatted json file", e);
+        } catch (IOException e) {
+            throw new FileException(String.format("Error reading file %s", jsonFile.getPath()), e);
+        }
+    }
 
     // Static File methods
 
@@ -353,10 +400,68 @@ public abstract class JavaJSONArrayToFile<T, K> {
     public void append(T value) {
         synchronized (cacheBuffered) {
             cacheBuffered.add(value);
-            printTrack(String.format("PRE  append(T)      \tB(%2d)      F(%2d)", countBuffered(), countFile()));
+            printTrack(String.format("     append(T)      \tB(%2d)      F(%2d)", countBuffered(), countFile()));
         }
 
+        // Emit events
+        emitOnAdded(Collections.singletonList(value));
+
+        // Auto flush
         tryAutoFlush();
+    }
+
+    // Items are added to the end of the list and removed from the beginning.
+    // Items are added to the beginning of the file and deleted from the end.
+    /**
+     * Remove items from the file and then from the cacheBuffered.
+     *
+     * @param count the number of items to remove.
+     * @return the removed items.
+     * @throws FileException if some IO error occurs during file reading/writing.
+     */
+    public List<T> remove(int count) throws FileException {
+        List<T> removedItems = new ArrayList<>();
+
+        synchronized (cacheBuffered) {
+            // If required, Delete items from cacheBuffered
+            if (count > countFile()) {
+                int countRemaining = count - countFile();
+
+                if (countRemaining > countBuffered()) {
+                    // Delete ALL items from cacheBuffered
+                    removedItems.addAll(cacheBuffered);
+                    cacheBuffered.clear();
+                } else {
+                    // Delete items from cacheBuffered
+                    for (int i = 0; i < countRemaining; i++) {
+                        if (cacheBuffered.isEmpty()) break;
+                        T item = cacheBuffered.remove(0);
+                        removedItems.add(item);
+                    }
+                }
+            }
+
+            // Delete items from file
+            ArrayNode array = getMainNode();
+            for (int i = 0; i < count; i++) {
+                if (array.isEmpty()) break;;
+                JsonNode nodeRemoved = array.remove(array.size() - 1);
+                try {
+                    removedItems.add(jsonMapper.readValue(nodeRemoved.traverse(), typeOfT));
+                } catch (IOException ignore) {}
+            }
+
+            // Update file's properties
+            updateFileProperties(array);
+
+            // Write JSON array to file
+            writeFile(jsonFile, array);
+        }
+
+        // Emit events
+        if (!removedItems.isEmpty()) emitOnRemoved(removedItems, false);
+
+        return removedItems;
     }
 
     private void tryAutoFlush() {
@@ -364,7 +469,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
                 && (countBuffered() >= maxBufferSize || countFile() >= maxFileSize)
                 && !isAutoFlushing) {
             isAutoFlushing = true;
-            JavaThreads.initAndStart(new Runnable() {
+            autoThread = JavaThreads.initAndStart(new Runnable() {
                 @Override
                 public void run() {
                     synchronized (cacheBuffered) {
@@ -402,6 +507,9 @@ public abstract class JavaJSONArrayToFile<T, K> {
     }
 
     public void flushCache(boolean flushAll) throws FileException {
+        List<T> flushedItems = new ArrayList<>();
+        List<T> removedItems = new ArrayList<>();
+
         synchronized (cacheBuffered) {
             printTrack(String.format("PRE  flushCache(%b) \tB(%2d)      F(%2d)", flushAll, countBuffered(), countFile()));
 
@@ -424,24 +532,17 @@ public abstract class JavaJSONArrayToFile<T, K> {
                 printTrack(String.format("F    flushCache(%b) \tB(%2d) >%2d> F(%2d)", flushAll, countBuffered(), toFlushCount, countFile()));
 
                 // Flush to JSON Array (add to the beginning)
-                int addedCount = 0;
+                int flushedCount = 0;
                 for (T v : cacheBuffered) {
-                    if (addedCount >= toFlushCount) break;
+                    if (flushedCount >= toFlushCount) break;
                     array.insertPOJO(0, v);
-                    addedCount++;
+                    flushedItems.add(v);
+                    flushedCount++;
                 }
-
-                // Remove from cacheBuffered
-                cacheBuffered.subList(0, addedCount).clear();
+                cacheBuffered.removeAll(flushedItems);
 
                 // Update file's properties
-                fileCount = array.size();
-                try {
-                    if (this.fileFirst == null)
-                        this.fileFirst = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
-                    this.fileLast = jsonMapper.readValue(array.get(0).traverse(), typeOfT);
-                } catch (Throwable ignore) {
-                }
+                updateFileProperties(array);
             }
 
             // Delete items from JSON Array
@@ -454,23 +555,27 @@ public abstract class JavaJSONArrayToFile<T, K> {
                 int removedCount = 0;
                 for (int i = 0; i < toDeleteCount; i++) {
                     if (array.isEmpty()) break;
-                    array.remove(array.size() - 1);
+                    JsonNode nodeRemoved = array.remove(array.size() - 1);
+                    try {
+                        removedItems.add(jsonMapper.readValue(nodeRemoved.traverse(), typeOfT));
+                    } catch (IOException ignore) {}
                     removedCount++;
                 }
 
                 // Update file's properties
-                fileCount = array.size();
-                try {
-                    this.fileFirst = jsonMapper.readValue(array.get(array.size() - 1).traverse(), typeOfT);
-                } catch (Throwable ignore) {
-                }
+                updateFileProperties(array);
             }
 
+            // Write JSON array to file
             int writtenCount = writeFile(jsonFile, array);
             assert fileCount == writtenCount;
-
             printTrack(String.format("POST flushCache(%b) \tB(%2d)      F(%2d)", flushAll, countBuffered(), countFile()));
         }
+
+        // Emit events
+        boolean isAuto = Thread.currentThread() == autoThread;
+        if (!flushedItems.isEmpty()) emitOnFlushed(flushedItems, isAuto);
+        if (!removedItems.isEmpty()) emitOnRemoved(removedItems, isAuto);
     }
 
 
@@ -687,6 +792,25 @@ public abstract class JavaJSONArrayToFile<T, K> {
      */
     public T getLastFile() {
         return fileLast;
+    }
+
+
+    // Observer's event emitters
+
+    public void registerObserver(Observer<T> observer) {
+        this.observer = observer;
+    }
+
+    private void emitOnAdded(List<T> items) {
+        if (observer!=null) observer.onAdded(items);
+    }
+
+    private void emitOnFlushed(List<T> items, boolean auto) {
+        if (observer!=null) observer.onFlushed(items, auto);
+    }
+
+    private void emitOnRemoved(List<T> items, boolean auto) {
+        if (observer!=null) observer.onRemoved(items, auto);
     }
 
 

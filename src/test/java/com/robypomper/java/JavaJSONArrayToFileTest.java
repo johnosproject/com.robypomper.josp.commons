@@ -7,9 +7,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
+// TODO remove
+// TODO Observer
 class JavaJSONArrayToFileTest {
 
     private static final boolean KEEP_IN_MEMORY = true;
@@ -176,7 +181,7 @@ class JavaJSONArrayToFileTest {
         Exception exception = assertThrows(JavaJSONArrayToFile.FileException.class, () -> {
             new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
         });
-        String expectedPartialMessage = "Error reading file";
+        String expectedPartialMessage = "is not a JSON array";
         String actualMessage = exception.getMessage();
         assertTrue(actualMessage.contains(expectedPartialMessage));
     }
@@ -223,6 +228,288 @@ class JavaJSONArrayToFileTest {
 
 
     @Test
+    void testRemove() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+        arrayToFile.append("test5");
+        assertEquals(5, arrayToFile.count());
+        assertEquals("test1", arrayToFile.getFirst());
+
+        List<String> removed = arrayToFile.remove(1);
+        assertEquals(1, removed.size());
+
+        assertEquals(4, arrayToFile.count());
+        assertEquals("test2", arrayToFile.getFirst());
+    }
+
+    @Test
+    void testRemove_OnlyFilePartial() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+
+        // 2 items on buffer, 2 items on file
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(4);
+        arrayToFile.flushCache();
+
+        assertEquals(4, arrayToFile.count());
+
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertEquals("test1", arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertEquals("test2", arrayToFile.getLastFile());
+
+        List<String> removed = arrayToFile.remove(1);
+        assertEquals(1, removed.size());
+
+        assertEquals(4-1, arrayToFile.count());
+
+        assertEquals("test2", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertEquals("test2", arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertEquals("test2", arrayToFile.getLastFile());
+    }
+
+    @Test
+    void testRemove_OnlyFileFull() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+
+        // 2 items on buffer, 2 items on file
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(4);
+        arrayToFile.flushCache();
+
+        assertEquals(4, arrayToFile.count());
+
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertEquals("test1", arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertEquals("test2", arrayToFile.getLastFile());
+
+        List<String> removed = arrayToFile.remove(2);
+        assertEquals(2, removed.size());
+
+        assertEquals(4-2, arrayToFile.count());
+
+        assertEquals("test3", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+    }
+
+    @Test
+    void testRemove_OnlyBufferPartial() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+
+        // 4 items on buffer, 0 items on file
+        // N/A
+
+        assertEquals(4, arrayToFile.count());
+
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test1", arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+
+        List<String> removed = arrayToFile.remove(1);
+        assertEquals(1, removed.size());
+
+        assertEquals(4-1, arrayToFile.count());
+
+        assertEquals("test2", arrayToFile.getFirst());
+        assertEquals("test2", arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+    }
+
+    @Test
+    void testRemove_OnlyBufferFull() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+
+        // 4 items on buffer, 0 items on file
+        // N/A
+
+        assertEquals(4, arrayToFile.count());
+
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test1", arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+
+        List<String> removed = arrayToFile.remove(4);
+        assertEquals(4, removed.size());
+
+        assertEquals(0, arrayToFile.count());
+
+        assertNull(arrayToFile.getFirst());
+        assertNull(arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertNull(arrayToFile.getLast());
+        assertNull(arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+    }
+
+    @Test
+    void testRemove_MixedPartial() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+
+        // 2 items on buffer, 2 items on file
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(4);
+        arrayToFile.flushCache();
+
+        assertEquals(4, arrayToFile.count());
+
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertEquals("test1", arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertEquals("test2", arrayToFile.getLastFile());
+
+        List<String> removed = arrayToFile.remove(3);
+        assertEquals(3, removed.size());
+
+        assertEquals(4-3, arrayToFile.count());
+
+        assertEquals("test4", arrayToFile.getFirst());
+        assertEquals("test4", arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+    }
+
+    @Test
+    void testRemove_MixedFull() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+
+        // 2 items on buffer, 2 items on file
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(4);
+        arrayToFile.flushCache();
+
+        assertEquals(4, arrayToFile.count());
+
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertEquals("test1", arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertEquals("test2", arrayToFile.getLastFile());
+
+        List<String> removed = arrayToFile.remove(4);
+        assertEquals(4, removed.size());
+
+        assertEquals(0, arrayToFile.count());
+
+        assertNull(arrayToFile.getFirst());
+        assertNull(arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertNull(arrayToFile.getLast());
+        assertNull(arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+    }
+
+    @Test
+    void testRemove_More() throws IOException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+
+        // 2 items on buffer, 2 items on file
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(4);
+        arrayToFile.flushCache();
+
+        assertEquals(4, arrayToFile.count());
+
+        assertEquals("test1", arrayToFile.getFirst());
+        assertEquals("test3", arrayToFile.getFirstBuffered());
+        assertEquals("test1", arrayToFile.getFirstFile());
+
+        assertEquals("test4", arrayToFile.getLast());
+        assertEquals("test4", arrayToFile.getLastBuffered());
+        assertEquals("test2", arrayToFile.getLastFile());
+
+        List<String> removed = arrayToFile.remove(5);
+        assertEquals(4, removed.size());
+
+        assertEquals(0, arrayToFile.count());
+
+        assertNull(arrayToFile.getFirst());
+        assertNull(arrayToFile.getFirstBuffered());
+        assertNull(arrayToFile.getFirstFile());
+
+        assertNull(arrayToFile.getLast());
+        assertNull(arrayToFile.getLastBuffered());
+        assertNull(arrayToFile.getLastFile());
+    }
+
+
+    @Test
     void testAutoFlush() throws IOException {
         File jsonFile = File.createTempFile("data_empty", ".json");
         TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
@@ -250,7 +537,7 @@ class JavaJSONArrayToFileTest {
 
         for (int i = 0; i < 50; i++) {
             arrayToFile.append("test" + i);
-            JavaThreads.softSleep(100); // let the thread flush the buffer
+            arrayToFile.flushCache();
             System.out.printf("%-2d#  TOT %3d => Buffer: %3d File: %3d", i, arrayToFile.count(), arrayToFile.countBuffered(), arrayToFile.countFile());
             System.out.println("\t\t" + arrayToFile.getAll());
         }
@@ -481,6 +768,52 @@ class JavaJSONArrayToFileTest {
         assertEquals(5, arrayToFile.count());
     }
 
+
+    @Test
+    void testObserver() throws IOException, InterruptedException {
+        File jsonFile = File.createTempFile("data_empty", ".json");
+        TestJavaJSONArrayToFile arrayToFile = new TestJavaJSONArrayToFile(jsonFile, KEEP_IN_MEMORY);
+        CountDownLatch latchAdded = new CountDownLatch(1);
+        CountDownLatch latchFlushed = new CountDownLatch(1);
+        CountDownLatch latchRemoved = new CountDownLatch(1);
+        arrayToFile.registerObserver(new JavaJSONArrayToFile.Observer<String>() {
+            @Override
+            public void onAdded(List<String> items) {
+                latchAdded.countDown();
+            }
+
+            @Override
+            public void onFlushed(List<String> items, boolean auto) {
+                latchFlushed.countDown();
+            }
+
+            @Override
+            public void onRemoved(List<String> items, boolean auto) {
+                latchRemoved.countDown();
+            }
+
+        });
+
+        arrayToFile.append("test1");
+        arrayToFile.append("test2");
+        arrayToFile.append("test3");
+        arrayToFile.append("test4");
+        arrayToFile.append("test5");
+        arrayToFile.append("test6");
+        assertTrue(latchAdded.await(1, TimeUnit.SECONDS));
+
+        // 2 items on buffer, 4 on flushed into file
+        arrayToFile.setReleaseBufferSize(2);
+        arrayToFile.setMaxBufferSize(4);
+        arrayToFile.flushCache();
+        assertTrue(latchFlushed.await(1, TimeUnit.SECONDS));
+
+        // 2 items on buffer, 2 into file, 2 deleted from file
+        arrayToFile.setReleaseFileSize(2);
+        arrayToFile.setMaxFileSize(4);
+        arrayToFile.flushCache();
+        assertTrue(latchRemoved.await(1, TimeUnit.SECONDS));
+    }
 
     @Test
     void testCountMethods() throws IOException {
