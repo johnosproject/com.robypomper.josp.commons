@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.text.SimpleDateFormat;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 /**
  * Utils class to render and parse the JOSP protocol messages.
@@ -41,30 +42,77 @@ import java.util.TimeZone;
 public class JOSPProtocol {
 
     // Class constants
+
+    /**
+     * Constant for the JOSP protocol version 2.0.
+     */
     public static final String JOSP_PROTO_VERSION_2_0 = "2.0";
-
-    public static final String DISCOVERY_TYPE = "_josp2._tcp";
-    public static final boolean CLIENT_AUTH_REQUIRED = true;
-    public static final boolean CERT_SHARING_ENABLE = true;
-    public static final int CERT_SHARING_TIMEOUT = 30 * 1000;
-
+    /**
+     * Current JOSP protocol version.
+     */
     public static final String JOSP_PROTO_VERSION = JOSP_PROTO_VERSION_2_0;
+    /**
+     * Current JOSP protocol name.
+     */
     public static final String JOSP_PROTO_NAME = "JOSP";
+    /**
+     * Current JOSP protocol.
+     */
     protected static final String JOSP_PROTO = JOSP_PROTO_NAME + "/" + JOSP_PROTO_VERSION;
 
-    private static final String UPD_MSG_BASE = JOSPProtocol.JOSP_PROTO + " UPD_MSG";
-    private static final String UPD_MSG = UPD_MSG_BASE + " %s\nobjId:%s\ncompPath:%s\nupdType:%s\n%s";
-    private static final String CMD_MSG_BASE = JOSPProtocol.JOSP_PROTO + " CMD_MSG";
-    private static final String CMD_MSG = CMD_MSG_BASE + " %s\nfullSrvId:%s/%s/%s\n%s\ncompPath:%s\ncmdType:%s\n%s";
+
+    /**
+     * The type used by any JOSP Object to be discovered via mDNS.
+     */
+    public static final String DISCOVERY_TYPE = "_josp2._tcp";
 
 
     // Public vars
 
-    private static final TimeZone gmtTimeZone = TimeZone.getTimeZone("GMT");
-    private static final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd-HHmmssSSS");
+    private static final TimeZone gmtTimeZone__ = TimeZone.getTimeZone("GMT");
+    private static final SimpleDateFormat dateFormatter__ = new SimpleDateFormat("yyyyMMdd-HHmmssSSS");
+
+
+    // IDs check methods
+
+    /**
+     * Check if the given string is a valid service id.
+     * <p>
+     * The service id must be in the format "srvID/userID/instanceID". Where
+     * srvID and userID are alphanumeric strings with '-' and '_' characters.
+     * The instanceID is a number.
+     *
+     * @param fullSrvId the service id to check.
+     * @return true if the service id is valid, false otherwise.
+     */
+    public static boolean isFullSrvId(String fullSrvId) {
+        final String regex = "^[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+/[a-zA-Z0-9]+$";   // instance id can be alphanumeric
+        //final String regex = "^[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+/[0-9]+$";       // instance id must be numeric
+        return Pattern.matches(regex, fullSrvId);
+    }
+
+    /**
+     * Check if the given string is a valid object id.
+     * <p>
+     * The object id must be in the format "xxxxx-xxxxx-xxxxx" (15 alphanumeric
+     * characters separated by '-' every 5).
+     *
+     * @param objId the object id to check.
+     * @return true if the object id is valid, false otherwise.
+     */
+    public static boolean isFullObjId(String objId) {
+        final String regex = "^[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}$";
+        return Pattern.matches(regex, objId);
+    }
 
 
     // Status update message
+
+    private static final String UPD_MSG_BASE = JOSPProtocol.JOSP_PROTO + " UPD_MSG";
+    /**
+     * The message format for status update messages.
+     */
+    private static final String UPD_MSG = UPD_MSG_BASE + " %s\nobjId:%s\ncompPath:%s\nupdType:%s\n%s";
 
     public static boolean isUpdMsg(String msg) {
         return msg.startsWith(UPD_MSG_BASE);
@@ -139,6 +187,12 @@ public class JOSPProtocol {
 
 
     // Command action message
+
+    private static final String CMD_MSG_BASE = JOSPProtocol.JOSP_PROTO + " CMD_MSG";
+    /**
+     * The message format for command action messages.
+     */
+    private static final String CMD_MSG = CMD_MSG_BASE + " %s\nfullSrvId:%s/%s/%s\n%s\ncompPath:%s\ncmdType:%s\n%s";
 
     public static boolean isCmdMsg(String msg) {
         return msg.startsWith(CMD_MSG_BASE);
