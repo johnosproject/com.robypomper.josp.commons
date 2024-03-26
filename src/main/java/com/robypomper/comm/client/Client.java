@@ -29,6 +29,11 @@ public interface Client extends Peer {
 
     void connect() throws PeerConnectionException;
 
+    /**
+     * @return `true` if the server is reachable and listening on the port.
+     */
+    boolean ping();
+
 
     // Behaviours configs
 

@@ -293,6 +293,18 @@ public class ClientWrapper implements Client {
         wrapper.connect();
     }
 
+    /**
+     * @return `true` if there is a wrapped client and his server is reachable
+     * and listening on the port.
+     */
+    @Override
+    public boolean ping() {
+        if (wrapper == null)
+            return false;
+
+        return wrapper.ping();
+    }
+
     @Override
     public void disconnect() throws PeerDisconnectionException {
         if (wrapper == null)
