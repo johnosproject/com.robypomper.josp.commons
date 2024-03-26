@@ -226,11 +226,11 @@ public abstract class AbsGWsClient extends ClientWrapper {
     private void regenerateCertificate() {
         trustManager = new DynAddTrustManager();
         try {
-            KeyStore clientKeyStore = JavaJKS.generateKeyStore(getLocalId(), KS_PASS, getLocalId() + "-CloudCert");
-            localCertificate = JavaJKS.extractCertificate(clientKeyStore, getLocalId() + "-CloudCert");
+            KeyStore clientKeyStore = JavaJKS.generateAndLoadNewKeyStoreTempFile(getLocalId(), KS_PASS, getLocalId() + "-CloudCert");
+            localCertificate = JavaJKS.extractKeyStoreCertificate(clientKeyStore, getLocalId() + "-CloudCert");
             sslCtx = JavaSSL.generateSSLContext(clientKeyStore, KS_PASS, trustManager);
 
-        } catch (JavaJKS.GenerationException | JavaSSL.GenerationException e) {
+        } catch (JavaJKS.GenerationException | JavaJKS.LoadingException | JavaSSL.GenerationException e) {
             assert false : String.format("JKS and SSL generation are standard and should not throw exception [%s] %s", e.getClass().getSimpleName(), e.getMessage());
         }
     }
