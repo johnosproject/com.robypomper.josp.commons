@@ -103,7 +103,7 @@ ext {
     set('version.scribejava'        , '8.3.3')
     set('version.lombok'            , '1.18.28')
     set('version.jmdns'             , '3.5.8')
-    set('version.slf4j'               , '2.0.9')
-    set('version.junit-jupiter'       , '5.10.0')
+    set('version.slf4j'             , '2.0.9')
+    set('version.junit-jupiter'     , '5.10.0')
 }
 //@formatter:on

@@ -24,7 +24,7 @@ public interface HeartBeatConfigs {
     // Class constants
 
     int TIMEOUT_MS = 30 * 1000;
-    int TIMEOUT_HB_MS = 30 * 1000;
+    int TIMEOUT_HB_MS = TIMEOUT_MS - calculateMinDiff(TIMEOUT_MS);
     boolean ENABLE_HB_RES = true;
 
 
@@ -41,6 +41,10 @@ public interface HeartBeatConfigs {
     boolean isHBResponseEnabled();
 
     void enableHBResponse(boolean enabled);
+
+    static int calculateMinDiff(int timeoutMs) {
+        return timeoutMs / 10;
+    }
 
 
     // Listener

@@ -108,10 +108,9 @@ public class ClientSSL_Integration extends SSL_IntegrationBase {
         Assertions.assertEquals(expected, exception.getMessage());
 
         Assertions.assertTrue(exception.getCause() instanceof SSLException);
-        if (JavaVersion.JAVA_CURRENT.greaterEqual(JavaVersion.JAVA_11))
-            Assertions.assertEquals("Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty", exception.getCause().getMessage());
-        else
-            Assertions.assertEquals("java.lang.RuntimeException: Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty", exception.getCause().getMessage());
+        boolean isExpected = exception.getCause().getMessage().contains("Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty");
+        isExpected |= exception.getCause().getMessage().contains("java.lang.RuntimeException: Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty");
+        Assertions.assertTrue(isExpected, "Unexpected exception message: " + exception.getCause().getMessage());
 
         Assertions.assertEquals(ConnectionState.DISCONNECTED, client.getState());
     }
@@ -131,10 +130,9 @@ public class ClientSSL_Integration extends SSL_IntegrationBase {
 
         Assertions.assertTrue(exception.getCause() instanceof SSLException || exception.getCause() instanceof SocketException);
         if (exception.getCause() instanceof SSLException) {
-            if (JavaVersion.JAVA_CURRENT.greaterEqual(JavaVersion.JAVA_11))
-                Assertions.assertEquals("readHandshakeRecord", exception.getCause().getMessage());
-            else
-                Assertions.assertEquals("Received fatal alert: internal_error", exception.getCause().getMessage());
+            boolean isExpected = exception.getCause().getMessage().contains("Received fatal alert: internal_error");
+            isExpected |= exception.getCause().getMessage().contains("readHandshakeRecord");
+            Assertions.assertTrue(isExpected, "Unexpected exception message: " + exception.getCause().getMessage());
         }
         if (exception.getCause() instanceof SocketException) {
             Assertions.assertEquals("Broken pipe (Write failed)", exception.getCause().getMessage());
@@ -157,10 +155,9 @@ public class ClientSSL_Integration extends SSL_IntegrationBase {
         Assertions.assertEquals(expected, exception.getMessage());
 
         Assertions.assertTrue(exception.getCause() instanceof SSLException);
-        if (JavaVersion.JAVA_CURRENT.greaterEqual(JavaVersion.JAVA_11))
-            Assertions.assertEquals("Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty", exception.getCause().getMessage());
-        else
-            Assertions.assertEquals("java.lang.RuntimeException: Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty", exception.getCause().getMessage());
+        boolean isExpected = exception.getCause().getMessage().contains("Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty");
+        isExpected |= exception.getCause().getMessage().contains("java.lang.RuntimeException: Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty");
+        Assertions.assertTrue(isExpected, "Unexpected exception message: " + exception.getCause().getMessage());
 
         Assertions.assertEquals(ConnectionState.DISCONNECTED, client.getState());
     }

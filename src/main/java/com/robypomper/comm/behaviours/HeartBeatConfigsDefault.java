@@ -53,7 +53,7 @@ public class HeartBeatConfigsDefault implements HeartBeatConfigs {
     }
 
     public HeartBeatConfigsDefault(int timeoutMs, int timeoutHBMs, boolean enableHBRes) {
-        int minDiff = timeoutMs / 10;
+        int minDiff = HeartBeatConfigs.calculateMinDiff(timeoutMs);
         JavaAssertions.makeWarning(timeoutHBMs >= timeoutMs - minDiff, String.format("HeartBeat timeout (%d) can't be greater than network timeout (%d), reset heartbeat timeout to '%d'", timeoutHBMs, timeoutMs, timeoutMs - minDiff));
         if (timeoutHBMs > timeoutMs - minDiff)
             timeoutHBMs = timeoutMs - minDiff;

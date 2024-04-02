@@ -166,7 +166,7 @@ public class DiscoveryTestGeneric {
         Assertions.assertTrue(discoveryServiceListener.onServiceDiscovered.await(timeoutMs, TimeUnit.MILLISECONDS));
 
         System.out.println("Stop publisher (" + implName + ")");
-        pub.hide(false);
+        pub.hide(true);
 
         System.out.println("Wait for discover, losing service");
         Assertions.assertTrue(discoveryServiceListener.onServiceLost.await(timeoutMs, TimeUnit.MILLISECONDS));

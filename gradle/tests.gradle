@@ -45,11 +45,10 @@ sourceSets {}
 dependencies {
     // Test's commons
     testImplementation "org.junit.jupiter:junit-jupiter:${project.ext.get("version.junit-jupiter")}"
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation sourceSets.main.output
     testImplementation sourceSets.main.runtimeClasspath
-    testRuntimeOnly "org.slf4j:slf4j-nop:${project.ext.get("version.slf4j")}"       // comment to enable logs during test
-    //testRuntimeOnly "org.slf4j:slf4j-simple:${project.ext.get("version.slf4j")}"  // de-comment to enable logs during test
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j2-impl:${project.ext.get("version.apache.log4j")}"
 }
 
 

@@ -204,7 +204,7 @@ public abstract class ServerAbsSSL extends ServerAbs {
     public void shutdown() throws ServerShutdownException {
         super.shutdown();
 
-        if (enableServerCertSharing) {
+        if (enableServerCertSharing && serverCertSharing != null) {
             serverCertSharing.shutdown();
             serverCertSharing = null;
         }

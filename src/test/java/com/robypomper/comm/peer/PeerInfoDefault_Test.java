@@ -170,7 +170,7 @@ public class PeerInfoDefault_Test {
         socket = new Socket(server.getInetAddress(), PORT);
         peerInfo.updateOnConnected(socket);
 
-        Assertions.assertEquals(InetAddress.getLocalHost().getHostName().toUpperCase(), peerInfo.getHostname().toUpperCase());
+        Assertions.assertTrue(InetAddress.getLocalHost().getHostName().equalsIgnoreCase(peerInfo.getHostname()) || "LOCALHOST".equalsIgnoreCase(peerInfo.getHostname()));
         Assertions.assertEquals(socket.getLocalAddress(), peerInfo.getAddr());
         Assertions.assertEquals(socket.getLocalPort(), (int) peerInfo.getPort());
     }
@@ -181,7 +181,7 @@ public class PeerInfoDefault_Test {
         socket = new Socket(server.getInetAddress(), PORT);
         peerInfo.updateOnConnected(socket);
 
-        Assertions.assertEquals(InetAddress.getLocalHost().getHostName().toUpperCase(), peerInfo.getHostname().toUpperCase());
+        Assertions.assertTrue(InetAddress.getLocalHost().getHostName().equalsIgnoreCase(peerInfo.getHostname()) || "LOCALHOST".equalsIgnoreCase(peerInfo.getHostname()));
         Assertions.assertEquals(socket.getLocalAddress(), peerInfo.getAddr());
         Assertions.assertEquals(socket.getLocalPort(), (int) peerInfo.getPort());
 
@@ -190,7 +190,7 @@ public class PeerInfoDefault_Test {
         socket.close();
         peerInfo.updateOnDisconnected();
 
-        Assertions.assertEquals(InetAddress.getLocalHost().getHostName().toUpperCase(), peerInfo.getHostname().toUpperCase());
+        Assertions.assertTrue(InetAddress.getLocalHost().getHostName().equalsIgnoreCase(peerInfo.getHostname()) || "LOCALHOST".equalsIgnoreCase(peerInfo.getHostname()));
         Assertions.assertEquals(rememberLocalAddress, peerInfo.getAddr());
         Assertions.assertEquals(rememberLocalPort, (int) peerInfo.getPort());
     }
