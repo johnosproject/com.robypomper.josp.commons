@@ -73,11 +73,11 @@ public class JOSPPerm {
          */
         None(0),
         /**
-         * Allow access to object's info and status updates.
+         * Allow access to object's info and state updates.
          */
-        Status(1),
+        State(1),
         /**
-         * Like {@link #Status}, plus allow action execution.
+         * Like {@link #State}, plus allow action execution.
          */
         Actions(2),
         /**

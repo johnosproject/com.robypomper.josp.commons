@@ -156,9 +156,9 @@ public class JOSPProtocol_ObjectToService {
     }
 
 
-    // Status Upd Msg class
+    // State Upd Msg class
 
-    public static final String UPD_MSG_NAME = "StatusUpdate";
+    public static final String UPD_MSG_NAME = "StatusUpdate";   // TODO change to "StateUpdate"
     private static final String UPD_MSG_BASE = JOSPProtocol.JOSP_PROTO + " UPD_MSG";
     private static final String UPD_MSG = UPD_MSG_BASE + " %s\nobjId:%s\ncompPath:%s\ncmdType:%s\n%s";
 
@@ -218,64 +218,64 @@ public class JOSPProtocol_ObjectToService {
 
     // Events History Msg class (Response)
 
-    public static final JOSPPerm.Type HISTORY_EVENTS_REQ_MIN_PERM = JOSPPerm.Type.None;         // ToDo Should be CoOwner???
-    public static final String HISTORY_EVENTS_REQ_NAME = "HistoryEventsRes";
-    private static final String HISTORY_EVENTS_REQ_BASE = JOSPProtocol.JOSP_PROTO + " H_EVENTS_MSG";
-    private static final String HISTORY_EVENTS_REQ = HISTORY_EVENTS_REQ_BASE + " %s\nobjId:%s\nreqId:%s\n%s";
+    public static final JOSPPerm.Type EVENTS_MSG_RES_MIN_PERM = JOSPPerm.Type.CoOwner;
+    public static final String EVENTS_MSG_RES_NAME = "HistoryEventsRes";
+    private static final String EVENTS_MSG_RES_BASE = JOSPProtocol.JOSP_PROTO + " H_EVENTS_MSG";
+    private static final String EVENTS_MSG_RES = EVENTS_MSG_RES_BASE + " %s\nobjId:%s\nreqId:%s\n%s";
 
-    public static String createHistoryEventsMsg(String objId, String reqId, List<JOSPEvent> eventsHistory) {
-        return String.format(HISTORY_EVENTS_REQ, JavaDate.getNow(), objId, reqId, JOSPEvent.toString(eventsHistory));
+    public static String createEventsResMsg(String objId, String reqId, List<JOSPEvent> eventsHistory) {
+        return String.format(EVENTS_MSG_RES, JavaDate.getNow(), objId, reqId, JOSPEvent.toString(eventsHistory));
     }
 
-    public static boolean isHistoryEventsMsg(String msg) {
-        return msg.startsWith(HISTORY_EVENTS_REQ_BASE);
+    public static boolean isEventsResMsg(String msg) {
+        return msg.startsWith(EVENTS_MSG_RES_BASE);
     }
 
-    public static String getHistoryEventsMsg_ObjId(String msg) throws JOSPProtocol.ParsingException {
-        return JOSPProtocol.extractFieldFromResponse(msg, 3, 1, HISTORY_EVENTS_REQ_NAME);
+    public static String getEventsResMsg_ObjId(String msg) throws JOSPProtocol.ParsingException {
+        return JOSPProtocol.extractFieldFromResponse(msg, 3, 1, EVENTS_MSG_RES_NAME);
     }
 
-    public static String getHistoryEventsMsg_ReqId(String msg) throws JOSPProtocol.ParsingException {
-        return JOSPProtocol.extractFieldFromResponse(msg, 3, 2, HISTORY_EVENTS_REQ_NAME);
+    public static String getEventsResMsg_ReqId(String msg) throws JOSPProtocol.ParsingException {
+        return JOSPProtocol.extractFieldFromResponse(msg, 3, 2, EVENTS_MSG_RES_NAME);
     }
 
-    public static List<JOSPEvent> getHistoryEventsMsg_HistoryStatus(String msg) throws JOSPProtocol.ParsingException {
-        String eventsHistoryStr = JOSPProtocol.extractPayloadFromResponse(msg, 3, 3, HISTORY_EVENTS_REQ_NAME);
+    public static List<JOSPEvent> getEventsResMsg_HistoryMessage(String msg) throws JOSPProtocol.ParsingException {
+        String eventsHistoryStr = JOSPProtocol.extractPayloadFromResponse(msg, 3, 3, EVENTS_MSG_RES_NAME);
         return JOSPEvent.listFromString(eventsHistoryStr);
     }
 
 
-    // Status History Msg class (Response)
+    // History Msg class (Response)
 
-    public static final JOSPPerm.Type HISTORY_STATUS_REQ_MIN_PERM = JOSPPerm.Type.Status;
-    public static final String HISTORY_STATUS_REQ_NAME = "HistoryStatusRes";
-    private static final String HISTORY_STATUS_REQ_BASE = JOSPProtocol.JOSP_PROTO + " H_STATUS_MSG";
-    private static final String HISTORY_STATUS_REQ = HISTORY_STATUS_REQ_BASE + " %s\nobjId:%s\ncompPath:%s\nreqId:%s\n%s";
+    public static final JOSPPerm.Type HISTORY_MSG_RES_MIN_PERM = JOSPPerm.Type.State;
+    public static final String HISTORY_MSG_RES_NAME = "HistoryStatusRes";                               // TODO change to "HistoryRes"
+    private static final String HISTORY_MSG_RES_BASE = JOSPProtocol.JOSP_PROTO + " H_STATUS_MSG";       // TODO change to "H_HISTORY_MSG"
+    private static final String HISTORY_MSG_RES = HISTORY_MSG_RES_BASE + " %s\nobjId:%s\ncompPath:%s\nreqId:%s\n%s";
 
-    public static String createHistoryCompStatusMsg(String objId, String compPath, String reqId, List<JOSPStatusHistory> statusesHistory) {
-        return String.format(HISTORY_STATUS_REQ, JavaDate.getNow(), objId, compPath, reqId, JOSPStatusHistory.toString(statusesHistory));
+    public static String createHistoryResMsg(String objId, String compPath, String reqId, List<JOSPHistory> stateHistories) {
+        return String.format(HISTORY_MSG_RES, JavaDate.getNow(), objId, compPath, reqId, JOSPHistory.toString(stateHistories));
     }
 
-    public static boolean isHistoryCompStatusMsg(String msg) {
-        return msg.startsWith(HISTORY_STATUS_REQ_BASE);
+    public static boolean isHistoryResMsg(String msg) {
+        return msg.startsWith(HISTORY_MSG_RES_BASE);
     }
 
-    public static String getHistoryCompStatusMsg_ObjId(String msg) throws JOSPProtocol.ParsingException {
-        return JOSPProtocol.extractFieldFromResponse(msg, 4, 1, HISTORY_STATUS_REQ_NAME);
+    public static String getHistoryResMsg_ObjId(String msg) throws JOSPProtocol.ParsingException {
+        return JOSPProtocol.extractFieldFromResponse(msg, 4, 1, HISTORY_MSG_RES_NAME);
     }
 
-    public static String getHistoryCompStatusMsg_CompPath(String msg) throws JOSPProtocol.ParsingException {
-        return JOSPProtocol.extractFieldFromResponse(msg, 4, 2, HISTORY_STATUS_REQ_NAME);
+    public static String getHistoryResMsg_CompPath(String msg) throws JOSPProtocol.ParsingException {
+        return JOSPProtocol.extractFieldFromResponse(msg, 4, 2, HISTORY_MSG_RES_NAME);
     }
 
-    public static String getHistoryCompStatusMsg_ReqId(String msg) throws JOSPProtocol.ParsingException {
-        return JOSPProtocol.extractFieldFromResponse(msg, 4, 3, HISTORY_STATUS_REQ_NAME);
+    public static String getHistoryResMsg_ReqId(String msg) throws JOSPProtocol.ParsingException {
+        return JOSPProtocol.extractFieldFromResponse(msg, 4, 3, HISTORY_MSG_RES_NAME);
     }
 
-    public static List<JOSPStatusHistory> getHistoryCompStatusMsg_HistoryStatus(String msg) {
+    public static List<JOSPHistory> getHistoryResMsg_HistoryMessage(String msg) {
         try {
-            String historyStatusesStr = JOSPProtocol.extractPayloadFromResponse(msg, 4, 4, HISTORY_STATUS_REQ_NAME);
-            return JOSPStatusHistory.listFromString(historyStatusesStr);
+            String HistoryMessageesStr = JOSPProtocol.extractPayloadFromResponse(msg, 4, 4, HISTORY_MSG_RES_NAME);
+            return JOSPHistory.listFromString(HistoryMessageesStr);
         } catch (JOSPProtocol.ParsingException ignore) {
         }
 

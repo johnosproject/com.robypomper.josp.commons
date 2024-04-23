@@ -81,7 +81,7 @@ public class Caller20 extends AbsAPIObj {
      *
      * @param statusHistory the status to upload.
      */
-    public void postHistory(Params20.HistoryStatus statusHistory) throws JCPClient2.ConnectionException, JCPClient2.AuthenticationException, JCPClient2.ResponseException, JCPClient2.RequestException {
+    public void postHistory(Params20.HistoryMessage statusHistory) throws JCPClient2.ConnectionException, JCPClient2.AuthenticationException, JCPClient2.ResponseException, JCPClient2.RequestException {
         postHistory(Collections.singletonList(statusHistory));
     }
 
@@ -90,7 +90,7 @@ public class Caller20 extends AbsAPIObj {
      *
      * @param statusesHistory the statuses to upload.
      */
-    public void postHistory(List<Params20.HistoryStatus> statusesHistory) throws JCPClient2.ConnectionException, JCPClient2.AuthenticationException, JCPClient2.ResponseException, JCPClient2.RequestException {
+    public void postHistory(List<Params20.HistoryMessage> statusesHistory) throws JCPClient2.ConnectionException, JCPClient2.AuthenticationException, JCPClient2.ResponseException, JCPClient2.RequestException {
         jcpClient.execReq(Verb.POST, Paths20.FULL_PATH_HISTORY, statusesHistory, isSecure());
     }
 
