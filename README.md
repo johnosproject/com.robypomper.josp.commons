@@ -5,7 +5,7 @@ from the [John O.S. Project](https://www.johnosproject.com)
 
 **Artifact Name:** jospCommons<br />
 **Artifact Group:** com.robypomper.josp<br />
-**Artifact Version:** 2.2.3
+**Artifact Version:** 2.2.4
 
 [README](README.md) | [CHANGELOG](CHANGELOG.md) | [TODOs](TODOs.md) | [LICENCE](LICENCE.md)
 
