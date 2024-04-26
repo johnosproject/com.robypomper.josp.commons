@@ -1,4 +1,4 @@
-# JOSP Commons Changelog
+# JOSP Commons - Changelog
 
 [README](README.md) | [CHANGELOG](CHANGELOG.md) | [TODOs](TODOs.md) | [LICENCE](LICENCE.md)
 
