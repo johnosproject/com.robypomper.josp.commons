@@ -218,7 +218,6 @@ public class JavaFileWatcher {
                     while ((key = watchService.poll()) != null && !watcherThreadMustShutdown) {
                         for (WatchEvent<?> event : key.pollEvents()) {
                             Path filePath = Paths.get(fileDir.toString(), event.context().toString());
-                            System.out.printf("FileWatched %s%n", filePath);
                             try {
                                 List<JavaFileWatcherListener> fileListeners;
                                 synchronized (listenersMap) {
