@@ -421,16 +421,8 @@ public class ClientWrapper implements Client {
         });
     }
 
-    protected void emitOnConnect() {            // ToDO: Not throw because onConnect was emit only by wrapped client
-        log.info(String.format("ClientWrapper '%s' connected", getLocalId()));
-
-        connectionInfo.updateOnConnected();
-        JavaListeners.emitter(this, listenersConnection, "onConnect", new JavaListeners.ListenerMapper<PeerConnectionListener>() {
-            @Override
-            public void map(PeerConnectionListener l) {
-                l.onConnect(ClientWrapper.this);
-            }
-        });
+    protected void emitOnConnect() {
+        // This method is not called by the wrapper, but by the wrapped client
     }
 
     protected void emitOnDisconnecting() {
@@ -445,7 +437,10 @@ public class ClientWrapper implements Client {
         });
     }
 
-    protected void emitOnDisconnect() {         // ToDO: Not throw because onDisconnect was emit only by wrapped client
+    protected void emitOnDisconnect() {
+        // This method is not called by the wrapper, but by the wrapped client
+
+        // TODO Removed AbsGWsClient dependency from this method and delete following code
         log.info(String.format("ClientWrapper '%s' disconnected", getLocalId()));
 
         connectionInfo.updateOnDisconnected();

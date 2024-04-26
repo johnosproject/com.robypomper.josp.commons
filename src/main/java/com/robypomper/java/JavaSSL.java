@@ -148,12 +148,7 @@ public class JavaSSL {
         if (certsChain.length < 1)
             throw new PeerException("Can't read peer's id because peer certificate chain is empty");
 
-        //extractCN(certsChain[certsChain.length - 1]);         // TODO update this function to use extractCN(Certificate) method and remove unnecessary exception
-        String principal = ((X509Certificate) certsChain[certsChain.length - 1]).getSubjectX500Principal().getName();
-        if (principal.isEmpty())
-            throw new PeerException("Can't read peer's id because peer certificate's subject is empty");
-
-        return principal.substring(principal.indexOf("CN=") + 3, principal.indexOf(",", principal.indexOf("CN=") + 3));
+        return extractCN(certsChain[certsChain.length - 1]);
     }
 
     public static String extractCN(Certificate certificate) {

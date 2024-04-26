@@ -293,7 +293,7 @@ public class Client_Integration extends TCP_IntegrationBase {
         Assertions.assertNull(((ServerAbs_Impl) server).lastDataRx);
 
         System.out.println("Check emitted onFail");
-        //...todo
+        // TODO add check emitted onFail
 
         System.out.println("Disconnect client");
         disconnectClient();
@@ -330,7 +330,7 @@ public class Client_Integration extends TCP_IntegrationBase {
         Assertions.assertNull(((ServerAbs_Impl) server).lastDataRx);
 
         System.out.println("Check emitted onFail");
-        //...todo
+        // TODO add check emitted onFail
 
         System.out.println("Disconnect client");
         disconnectClient();
@@ -414,7 +414,7 @@ public class Client_Integration extends TCP_IntegrationBase {
         Assertions.assertNull(((ServerAbs_Impl) server).lastDataRx);
 
         System.out.println("Check emitted onFail");
-        //...todo
+        // TODO add check emitted onFail
 
         System.out.println("Disconnect client");
         disconnectClient();
@@ -451,7 +451,7 @@ public class Client_Integration extends TCP_IntegrationBase {
         Assertions.assertNull(((ServerAbs_Impl) server).lastDataRx);
 
         System.out.println("Check emitted onFail");
-        //...todo
+        // TODO add check emitted onFail
 
         System.out.println("Disconnect client");
         disconnectClient();

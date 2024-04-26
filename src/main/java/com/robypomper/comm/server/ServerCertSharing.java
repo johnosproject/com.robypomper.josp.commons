@@ -49,17 +49,15 @@ public class ServerCertSharing extends ServerAbsTCP {
 
     // Constructors
 
-    public ServerCertSharing(String localId, InetAddress bindAddr, int bindPort,
-                             Server server, AbsCustomTrustManager certTrustManager, Certificate localPublicCertFile) {
+    public ServerCertSharing(String localId, InetAddress bindAddr, int bindPort, AbsCustomTrustManager certTrustManager, Certificate localPublicCertFile) {
         super(localId, bindAddr, bindPort, PROTO_NAME);
         addListener(listenerClient);
-        // this.server = server; ToDo: remove server param
         this.certTrustManager = certTrustManager;
         this.localPublicCertificate = localPublicCertFile;
     }
 
     public static ServerCertSharing generate(Server server, InetAddress bindAddr, int bindPort, AbsCustomTrustManager trustManager, Certificate localPublicCertificate) {
-        return new ServerCertSharing(server.getLocalId() + "-CertSharing", bindAddr, bindPort + 1, server, trustManager, localPublicCertificate);
+        return new ServerCertSharing(server.getLocalId() + "-CertSharing", bindAddr, bindPort + 1, trustManager, localPublicCertificate);
     }
 
 
