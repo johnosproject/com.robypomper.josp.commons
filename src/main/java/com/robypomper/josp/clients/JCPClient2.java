@@ -141,7 +141,7 @@ public interface JCPClient2 {
 
     void setLoginCode(String loginCode);
 
-    void userLogout();
+    void userLogout() throws AuthenticationException, ResponseException, RequestException, ConnectionException;
 
 
     // Connection listeners

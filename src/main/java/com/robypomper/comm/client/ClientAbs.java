@@ -203,7 +203,6 @@ public abstract class ClientAbs extends PeerAbs implements Client {
 
         } catch (Throwable e) {
             log.warn("PING: " + e);
-            e.printStackTrace();
             // Return FALSE
             return false;
         }

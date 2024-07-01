@@ -794,15 +794,11 @@ public class DefaultJCPClient2 implements JCPClient2 {
     }
 
     @Override
-    public void userLogout() {
+    public void userLogout() throws AuthenticationException, ResponseException, RequestException, ConnectionException {
         if (!isUserAuthenticated())
             return;
 
-        try {
-            execReq(true, Verb.GET, getLogoutPath(null), true);
-        } catch (ConnectionException | AuthenticationException | RequestException | ResponseException e) {
-            e.printStackTrace();
-        }
+        execReq(true, Verb.GET, getLogoutPath(null), true);
 
         cleanSession();
 
