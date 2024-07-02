@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -148,12 +148,7 @@ public class JavaSSL {
         if (certsChain.length < 1)
             throw new PeerException("Can't read peer's id because peer certificate chain is empty");
 
-        //extractCN(certsChain[certsChain.length - 1]);         // TODO update this function to use extractCN(Certificate) method and remove unnecessary exception
-        String principal = ((X509Certificate) certsChain[certsChain.length - 1]).getSubjectX500Principal().getName();
-        if (principal.isEmpty())
-            throw new PeerException("Can't read peer's id because peer certificate's subject is empty");
-
-        return principal.substring(principal.indexOf("CN=") + 3, principal.indexOf(",", principal.indexOf("CN=") + 3));
+        return extractCN(certsChain[certsChain.length - 1]);
     }
 
     public static String extractCN(Certificate certificate) {

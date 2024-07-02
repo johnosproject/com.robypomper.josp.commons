@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-// TODO remove
-// TODO Observer
+// TODO implement test for remove feature
+// TODO implement test for Observer
 class JavaJSONArrayToFileTest {
 
     private static final boolean KEEP_IN_MEMORY = true;

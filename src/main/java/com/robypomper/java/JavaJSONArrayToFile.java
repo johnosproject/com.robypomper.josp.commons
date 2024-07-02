@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -849,9 +849,9 @@ public abstract class JavaJSONArrayToFile<T, K> {
         }
     }
 
-    // todo check reverse
     public List<T> filterAll(Filter<T> filter) throws FileException {
         List<T> filtered = new ArrayList<>(filterAllBuffered(filter));
+        // TODO check reverse call
         Collections.reverse(filtered);
         filtered.addAll(filterAllFile(filter));
         return filtered;
@@ -1087,7 +1087,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         freeGC();
         printHeavyOpsEnd(String.format("File '%s' scanned in %-2f seconds (filterByIdFile) (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, countFile()), countFile());
 
-        // todo check reverse
+        // TODO check reverse call
         Collections.reverse(range);
         return range;
     }
@@ -1178,7 +1178,7 @@ public abstract class JavaJSONArrayToFile<T, K> {
         freeGC();
         printHeavyOpsEnd(String.format("File '%s' scanned in %-2f seconds (filterByDateFile) (%d items)", jsonFile.getPath(), (endTime - startTime) / 1000.0, countFile()), countFile());
 
-        // todo check reverse
+        // TODO check reverse call
         Collections.reverse(range);
         return range;
     }

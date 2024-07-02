@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -166,7 +166,7 @@ public class DiscoveryTestGeneric {
         Assertions.assertTrue(discoveryServiceListener.onServiceDiscovered.await(timeoutMs, TimeUnit.MILLISECONDS));
 
         System.out.println("Stop publisher (" + implName + ")");
-        pub.hide(false);
+        pub.hide(true);
 
         System.out.println("Wait for discover, losing service");
         Assertions.assertTrue(discoveryServiceListener.onServiceLost.await(timeoutMs, TimeUnit.MILLISECONDS));

@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,17 +49,15 @@ public class ServerCertSharing extends ServerAbsTCP {
 
     // Constructors
 
-    public ServerCertSharing(String localId, InetAddress bindAddr, int bindPort,
-                             Server server, AbsCustomTrustManager certTrustManager, Certificate localPublicCertFile) {
+    public ServerCertSharing(String localId, InetAddress bindAddr, int bindPort, AbsCustomTrustManager certTrustManager, Certificate localPublicCertFile) {
         super(localId, bindAddr, bindPort, PROTO_NAME);
         addListener(listenerClient);
-        // this.server = server; ToDo: remove server param
         this.certTrustManager = certTrustManager;
         this.localPublicCertificate = localPublicCertFile;
     }
 
     public static ServerCertSharing generate(Server server, InetAddress bindAddr, int bindPort, AbsCustomTrustManager trustManager, Certificate localPublicCertificate) {
-        return new ServerCertSharing(server.getLocalId() + "-CertSharing", bindAddr, bindPort + 1, server, trustManager, localPublicCertificate);
+        return new ServerCertSharing(server.getLocalId() + "-CertSharing", bindAddr, bindPort + 1, trustManager, localPublicCertificate);
     }
 
 
