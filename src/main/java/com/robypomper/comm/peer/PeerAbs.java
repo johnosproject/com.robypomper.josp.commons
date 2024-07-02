@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -296,8 +296,10 @@ public abstract class PeerAbs implements Peer {
 
                     // Remote causes
                     if (e.getMessage().equals("Can't read data because reached end of stream")) {
-                        errorOnDataRead = true;
-                        emitOnFail("Error reading data", e);
+                        if (!getState().isDisconnecting()) {
+                            errorOnDataRead = true;
+                            emitOnFail("Error reading data", e);
+                        }
                         break;                          // Remote disconnection without ByeMsg (NB!: wrong/error way)
                     }
 

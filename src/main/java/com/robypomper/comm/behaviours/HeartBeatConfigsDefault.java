@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ public class HeartBeatConfigsDefault implements HeartBeatConfigs {
     }
 
     public HeartBeatConfigsDefault(int timeoutMs, int timeoutHBMs, boolean enableHBRes) {
-        int minDiff = timeoutMs / 10;
+        int minDiff = HeartBeatConfigs.calculateMinDiff(timeoutMs);
         JavaAssertions.makeWarning(timeoutHBMs >= timeoutMs - minDiff, String.format("HeartBeat timeout (%d) can't be greater than network timeout (%d), reset heartbeat timeout to '%d'", timeoutHBMs, timeoutMs, timeoutMs - minDiff));
         if (timeoutHBMs > timeoutMs - minDiff)
             timeoutHBMs = timeoutMs - minDiff;

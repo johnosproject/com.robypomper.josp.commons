@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -226,11 +226,11 @@ public abstract class AbsGWsClient extends ClientWrapper {
     private void regenerateCertificate() {
         trustManager = new DynAddTrustManager();
         try {
-            KeyStore clientKeyStore = JavaJKS.generateKeyStore(getLocalId(), KS_PASS, getLocalId() + "-CloudCert");
-            localCertificate = JavaJKS.extractCertificate(clientKeyStore, getLocalId() + "-CloudCert");
+            KeyStore clientKeyStore = JavaJKS.generateAndLoadNewKeyStoreTempFile(getLocalId(), KS_PASS, getLocalId() + "-CloudCert");
+            localCertificate = JavaJKS.extractKeyStoreCertificate(clientKeyStore, getLocalId() + "-CloudCert");
             sslCtx = JavaSSL.generateSSLContext(clientKeyStore, KS_PASS, trustManager);
 
-        } catch (JavaJKS.GenerationException | JavaSSL.GenerationException e) {
+        } catch (JavaJKS.GenerationException | JavaJKS.LoadingException | JavaSSL.GenerationException e) {
             assert false : String.format("JKS and SSL generation are standard and should not throw exception [%s] %s", e.getClass().getSimpleName(), e.getMessage());
         }
     }

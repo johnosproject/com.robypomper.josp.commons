@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -178,7 +178,7 @@ public class JavaDate {
      *
      * @param timePartition the time partition to alter. See {@link Calendar}.
      * @param count         the unit to add to timePartition. If it's negative
-     *                      number then it will subtracted.
+     *                      number then it will subtract.
      * @return the altered Date instance.
      * @see #getDateAltered(Date, int, int)
      */
@@ -198,20 +198,27 @@ public class JavaDate {
      * More examples:
      * <code>
      * getNow()                                 // Fri Feb 05 18:44:07 CET 2021
-     * getDateAltered(Calendar.YEAR,1)          // Fri Jan 01 00:00:00 CET 2022
-     * getDateAltered(Calendar.MONTH,1)         // Sat Mar 01 00:00:00 CET 2021
-     * getDateAltered(Calendar.DAY_OF_MONTH,1)  // Fri Feb 06 00:00:00 CET 2021
-     * getDateAltered(Calendar.HOUR_OF_DAY,1)   // Fri Feb 05 19:00:00 CET 2021
-     * getDateAltered(Calendar.MINUTE,1)        // Fri Feb 05 18:45:00 CET 2021
-     * getDateAltered(Calendar.SECOND,1)        // Fri Feb 05 18:44:08 CET 2021
+     * getDateAltered(Calendar.YEAR,1)          // Sat Feb 05 18:44:07 CET 2022
+     * getDateAltered(Calendar.YEAR,2)          // Sun Feb 05 18:44:07 CET 2023
+     * getDateAltered(Calendar.MONTH,1)         // Mon Mar 05 18:44:07 CET 2022
+     * getDateAltered(Calendar.DAY_OF_MONTH,1)  // Sat Feb 06 18:44:07 CET 2022
+     * getDateAltered(Calendar.DAY_OF_MONTH,2)  // Sun Feb 07 18:44:07 CET 2023
+     * getDateAltered(Calendar.HOUR_OF_DAY,1)   // Sat Feb 05 19:44:07 CET 2022
+     * getDateAltered(Calendar.MINUTE,1)        // Sat Feb 05 18:45:07 CET 2022
+     * getDateAltered(Calendar.SECOND,1)        // Sat Feb 05 18:44:08 CET 2022
+     * // negative count
+     * getDateAltered(Calendar.YEAR,-1)         // Thu Feb 05 18:44:07 CET 2020
+     * getDateAltered(Calendar.MONTH,-1)        // Wed Jan 05 18:44:07 CET 2022
+     * getDateAltered(Calendar.MONTH,-2)        // Mon Nov 05 18:44:07 CET 2021
+     * getDateAltered(Calendar.DAY_OF_MONTH,-1) // Thu Feb 04 18:44:07 CET 2022
      * </code>
-     *
-     * <b>NB:</b> only partitionTime values listed in the example are valid.
+     * <b>NB:</b> only partitionTime values listed in the example are valid,
+     * others will be ignored.
      *
      * @param date          the date to alter.
      * @param timePartition the time partition to alter. See {@link Calendar}.
      * @param count         the unit to add to timePartition. If it's negative
-     *                      number then it will subtracted.
+     *                      number then it will subtract.
      * @return the altered Date instance.
      */
     public static Date getDateAltered(Date date, int timePartition, int count) {

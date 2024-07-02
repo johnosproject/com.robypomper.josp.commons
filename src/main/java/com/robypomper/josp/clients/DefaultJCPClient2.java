@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@ import com.robypomper.java.*;
 import com.robypomper.josp.jcp.defs.base.internal.status.executable.Paths20;
 import com.robypomper.josp.states.JCPClient2State;
 import com.robypomper.josp.states.StateException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLHandshakeException;
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class DefaultJCPClient2 implements JCPClient2 {
 
     // Internal vars
 
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LoggerFactory.getLogger(DefaultJCPClient2.class);
     private final JavaEnum.SynchronizableState<JCPClient2State> state = new JavaEnum.SynchronizableState<>(JCPClient2State.DISCONNECTED, log);
     // Configs
     private final String clientId;
@@ -85,29 +85,12 @@ public class DefaultJCPClient2 implements JCPClient2 {
     private Date lastConnection;
     private Date lastDisconnection;
 
-
-    // Constructor
-
-    public DefaultJCPClient2(String clientId, String clientSecret,
-                             String apisBaseUrl, boolean apisSecured,
-                             String authBaseUrl, String authScopes, String authCallBack, String authRealm,
-                             String apiName) {
-        this(clientId, clientSecret, apisBaseUrl, apisSecured, authBaseUrl, authScopes, authCallBack, authRealm, null, 30, apiName);
-    }
-
     public DefaultJCPClient2(String clientId, String clientSecret,
                              String apisBaseUrl, boolean apisSecured,
                              String authBaseUrl, String authScopes, String authCallBack, String authRealm,
                              int connectionRetrySeconds,
                              String apiName) {
         this(clientId, clientSecret, apisBaseUrl, apisSecured, authBaseUrl, authScopes, authCallBack, authRealm, null, connectionRetrySeconds, apiName);
-    }
-
-    public DefaultJCPClient2(String clientId, String clientSecret,
-                             String apisBaseUrl, boolean apisSecured,
-                             String authBaseUrl, String authScopes, String authCallBack, String authRealm, String authCodeRefreshToken,
-                             String apiName) {
-        this(clientId, clientSecret, apisBaseUrl, apisSecured, authBaseUrl, authScopes, authCallBack, authRealm, authCodeRefreshToken, 30, apiName);
     }
 
     public DefaultJCPClient2(String clientId, String clientSecret,
@@ -438,7 +421,7 @@ public class DefaultJCPClient2 implements JCPClient2 {
 
             } catch (JCPNotReachableException e) {
                 if (state.enumNotEquals(JCPClient2State.CONNECTING_WAITING_JCP)) {
-                    log.warn(String.format("JCP Client '%s' can't connect, start JCP Client connection timer", getApiName()));
+                    log.debug("JCP API not reachable, start JCP Client connection timer");
                     state.set(JCPClient2State.CONNECTING_WAITING_JCP);
                     startConnectionTimer();
                 }
@@ -451,7 +434,7 @@ public class DefaultJCPClient2 implements JCPClient2 {
 
             } catch (JCPNotReachableException e) {
                 if (state.enumNotEquals(JCPClient2State.CONNECTING_WAITING_AUTH)) {
-                    log.warn(String.format("JCP Client '%s' can't connect, start JCP Client connection timer", getApiName()));
+                    log.debug("JCP Auth not reachable, start JCP Client connection timer");
                     state.set(JCPClient2State.CONNECTING_WAITING_AUTH);
                     startConnectionTimer();
                 }
@@ -748,7 +731,9 @@ public class DefaultJCPClient2 implements JCPClient2 {
         assert state.enumEquals(JCPClient2State.CONNECTING_WAITING_JCP)
                 || state.enumEquals(JCPClient2State.CONNECTING_WAITING_AUTH) :
                 "Method startConnectionTimer() can be called only from CONNECTING_WAITING_JCP or CONNECTING_WAITING_AUTH state; current state " + state.get();
+        assert connectionTimer == null;
 
+        log.debug("Start JCP Client connection timer");
         connectionTimer = JavaTimers.initAndStart(new ReConnectionTimer(),true,String.format(TH_CONNECTION_NAME, apiName.toUpperCase()),Integer.toString(this.hashCode()),connectionTimerDelaySeconds * 1000,connectionTimerDelaySeconds * 1000);
     }
 
@@ -809,15 +794,11 @@ public class DefaultJCPClient2 implements JCPClient2 {
     }
 
     @Override
-    public void userLogout() {
+    public void userLogout() throws AuthenticationException, ResponseException, RequestException, ConnectionException {
         if (!isUserAuthenticated())
             return;
 
-        try {
-            execReq(true, Verb.GET, getLogoutPath(null), true);
-        } catch (ConnectionException | AuthenticationException | RequestException | ResponseException e) {
-            e.printStackTrace();
-        }
+        execReq(true, Verb.GET, getLogoutPath(null), true);
 
         cleanSession();
 

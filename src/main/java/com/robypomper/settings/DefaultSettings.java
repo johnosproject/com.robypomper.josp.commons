@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,8 @@
 
 package com.robypomper.settings;
 
-import com.robypomper.log.Mrk_JOD;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -48,7 +47,7 @@ public class DefaultSettings {
 
     // Internal vars
 
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LoggerFactory.getLogger(DefaultSettings.class);
     private final File file;
     private final Map<String, Object> properties;
     private boolean errorAlreadyPrinted = false;
@@ -109,7 +108,7 @@ public class DefaultSettings {
 
         if (file == null) {
             if (!errorAlreadyPrinted) {
-                log.error(Mrk_JOD.JOD_MAIN, "Can't store configs on file, because settings are not loaded from file.");
+                log.error("Can't store configs on file, because settings are not loaded from file.");
                 errorAlreadyPrinted = true;
             }
             return;

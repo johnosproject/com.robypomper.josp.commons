@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ public class JavaSSL {
 
     // Class constants
 
-    public static final String TRUSTMNGR_ALG = "PKIX";          // TrustManagerFactory.getDefaultAlgorithm() => PKIX
-    public static final String KEYMNGR_ALG = "SunX509";         // KeyManagerFactory.getDefaultAlgorithm() = > SunX509
+    public static final String TRUSTMNGR_ALG = TrustManagerFactory.getDefaultAlgorithm();   // "PKIX";          // TrustManagerFactory.getDefaultAlgorithm() => PKIX
+    public static final String KEYMNGR_ALG = KeyManagerFactory.getDefaultAlgorithm();   // "SunX509";         // KeyManagerFactory.getDefaultAlgorithm() = > SunX509
     public static final String SSL_PROTOCOL = "TLS";
 
 
@@ -55,7 +55,7 @@ public class JavaSSL {
      * @return the generated {@link SSLContext}.
      */
     public static SSLContext generateSSLContext(KeyStore keyStore, String ksPass, TrustManager trustManager) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, String.format("Generating SSL context from key store and%strust store", trustManager != null ? "" : " empty "));
+        //log.trace( String.format("Generating SSL context from key store and%strust store", trustManager != null ? "" : " empty "));
 
         if (ksPass == null) ksPass = "";
         try {
@@ -82,7 +82,7 @@ public class JavaSSL {
      * @return the array containing the default {@link TrustManager}.
      */
     private static TrustManager[] generateTrustManagers(KeyStore keyStore) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Generating trust manager from key store");
+        //log.trace("Generating trust manager from key store");
 
         try {
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TRUSTMNGR_ALG);
@@ -106,7 +106,7 @@ public class JavaSSL {
      * @return the array containing the default {@link KeyManager}.
      */
     private static KeyManager[] generateKeyManager(KeyStore keyStore, String ksPass) throws GenerationException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Generating key manager from key store");
+        //log.trace("Generating key manager from key store");
 
         KeyManagerFactory kmf;
         try {
@@ -133,7 +133,7 @@ public class JavaSSL {
      * @return the peer id.
      */
     public static String getPeerId(SSLSocket peerSocket) throws PeerException {
-        //log.trace(Mrk_Commons.COMM_SSL_UTILS, "Getting SSL session from peer socket");
+        //log.trace("Getting SSL session from peer socket");
 
         SSLSession session = peerSocket.getSession();
         try {
@@ -144,17 +144,23 @@ public class JavaSSL {
         }
     }
 
-    private static String extractCN(Certificate[] certsChain) throws PeerException {
+    public static String extractCN(Certificate[] certsChain) throws PeerException {
         if (certsChain.length < 1)
             throw new PeerException("Can't read peer's id because peer certificate chain is empty");
 
-        String principal = ((X509Certificate) certsChain[certsChain.length - 1]).getSubjectX500Principal().getName();
+        return extractCN(certsChain[certsChain.length - 1]);
+    }
+
+    public static String extractCN(Certificate certificate) {
+        if (certificate == null)
+            throw new IllegalArgumentException("Can't read certificate's id because certificate is null");
+
+        String principal = ((X509Certificate) certificate).getSubjectX500Principal().getName();
         if (principal.isEmpty())
-            throw new PeerException("Can't read peer's id because peer certificate's subject is empty");
+            throw new IllegalArgumentException("Can't read certificate's id because certificate's subject is empty");
 
         return principal.substring(principal.indexOf("CN=") + 3, principal.indexOf(",", principal.indexOf("CN=") + 3));
     }
-
 
     // Exceptions
 

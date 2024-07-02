@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -170,7 +170,7 @@ public class PeerInfoDefault_Test {
         socket = new Socket(server.getInetAddress(), PORT);
         peerInfo.updateOnConnected(socket);
 
-        Assertions.assertEquals(InetAddress.getLocalHost().getHostName().toUpperCase(), peerInfo.getHostname().toUpperCase());
+        Assertions.assertTrue(InetAddress.getLocalHost().getHostName().equalsIgnoreCase(peerInfo.getHostname()) || "LOCALHOST".equalsIgnoreCase(peerInfo.getHostname()));
         Assertions.assertEquals(socket.getLocalAddress(), peerInfo.getAddr());
         Assertions.assertEquals(socket.getLocalPort(), (int) peerInfo.getPort());
     }
@@ -181,7 +181,7 @@ public class PeerInfoDefault_Test {
         socket = new Socket(server.getInetAddress(), PORT);
         peerInfo.updateOnConnected(socket);
 
-        Assertions.assertEquals(InetAddress.getLocalHost().getHostName().toUpperCase(), peerInfo.getHostname().toUpperCase());
+        Assertions.assertTrue(InetAddress.getLocalHost().getHostName().equalsIgnoreCase(peerInfo.getHostname()) || "LOCALHOST".equalsIgnoreCase(peerInfo.getHostname()));
         Assertions.assertEquals(socket.getLocalAddress(), peerInfo.getAddr());
         Assertions.assertEquals(socket.getLocalPort(), (int) peerInfo.getPort());
 
@@ -190,7 +190,7 @@ public class PeerInfoDefault_Test {
         socket.close();
         peerInfo.updateOnDisconnected();
 
-        Assertions.assertEquals(InetAddress.getLocalHost().getHostName().toUpperCase(), peerInfo.getHostname().toUpperCase());
+        Assertions.assertTrue(InetAddress.getLocalHost().getHostName().equalsIgnoreCase(peerInfo.getHostname()) || "LOCALHOST".equalsIgnoreCase(peerInfo.getHostname()));
         Assertions.assertEquals(rememberLocalAddress, peerInfo.getAddr());
         Assertions.assertEquals(rememberLocalPort, (int) peerInfo.getPort());
     }

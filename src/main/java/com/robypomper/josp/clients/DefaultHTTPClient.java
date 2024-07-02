@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.scribejava.core.model.Verb;
 import com.robypomper.java.*;
 import com.robypomper.josp.states.HTTPClientState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
@@ -49,7 +49,7 @@ public class DefaultHTTPClient implements HTTPClient {
 
     // Internal vars
 
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LoggerFactory.getLogger(DefaultHTTPClient.class);
     private final JavaEnum.SynchronizableState<HTTPClientState> state = new JavaEnum.SynchronizableState<>(HTTPClientState.NOT_AVAILABLE, log);
     // Configs
     private final String httpBaseUrl;

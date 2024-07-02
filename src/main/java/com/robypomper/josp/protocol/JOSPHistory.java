@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Messaging types to use in Events messaging classes.
  */
-public class JOSPStatusHistory {
+public class JOSPHistory {
 
     private static final String STATUS_HISTORY_REQ_FORMAT = "id:%s;compPath:%s;compType:%s;updatedAt:%s;payload:%s";
 
@@ -45,11 +45,11 @@ public class JOSPStatusHistory {
     private final String payload;
 
     @JsonCreator
-    public JOSPStatusHistory(@JsonProperty("id") long id,
-                             @JsonProperty("compPath") String compPath,
-                             @JsonProperty("compType") String compType,
-                             @JsonProperty("updatedAt") Date updatedAt,
-                             @JsonProperty("payload") String payload) {
+    public JOSPHistory(@JsonProperty("id") long id,
+                       @JsonProperty("compPath") String compPath,
+                       @JsonProperty("compType") String compType,
+                       @JsonProperty("updatedAt") Date updatedAt,
+                       @JsonProperty("payload") String payload) {
         this.id = id;
         this.compPath = compPath;
         this.compType = compType;
@@ -89,8 +89,8 @@ public class JOSPStatusHistory {
 
     // Converters
 
-    public static Params20.HistoryStatus toHistoryStatus(JOSPStatusHistory history) {
-        Params20.HistoryStatus historyRes = new Params20.HistoryStatus();
+    public static Params20.HistoryMessage toHistoryMessage(JOSPHistory history) {
+        Params20.HistoryMessage historyRes = new Params20.HistoryMessage();
         historyRes.id = history.getId();
         historyRes.compPath = history.getCompPath();
         historyRes.compType = history.getCompType();
@@ -99,20 +99,20 @@ public class JOSPStatusHistory {
         return historyRes;
     }
 
-    public static List<Params20.HistoryStatus> toHistoryStatuses(List<JOSPStatusHistory> histories) {
-        List<Params20.HistoryStatus> historyRes = new ArrayList<>();
-        for (JOSPStatusHistory h : histories)
-            historyRes.add(toHistoryStatus(h));
+    public static List<Params20.HistoryMessage> toHistoryMessagees(List<JOSPHistory> histories) {
+        List<Params20.HistoryMessage> historyRes = new ArrayList<>();
+        for (JOSPHistory h : histories)
+            historyRes.add(toHistoryMessage(h));
         return historyRes;
     }
 
-    public static String toString(JOSPStatusHistory statusHistory) {
+    public static String toString(JOSPHistory statusHistory) {
         return String.format(STATUS_HISTORY_REQ_FORMAT, statusHistory.getId(), statusHistory.getCompPath(), statusHistory.getCompType(), JavaDate.DEF_DATE_FORMATTER.format(statusHistory.getUpdatedAt()), statusHistory.getPayload());
     }
 
-    public static String toString(List<JOSPStatusHistory> statusesHistory) {
+    public static String toString(List<JOSPHistory> statusesHistory) {
         StringBuilder str = new StringBuilder();
-        for (JOSPStatusHistory s : statusesHistory) {
+        for (JOSPHistory s : statusesHistory) {
             str.append(toString(s));
             str.append("\n");
         }
@@ -120,7 +120,7 @@ public class JOSPStatusHistory {
         return str.toString();
     }
 
-    public static JOSPStatusHistory fromString(String statusesHistoryStr) throws JOSPProtocol.ParsingException {
+    public static JOSPHistory fromString(String statusesHistoryStr) throws JOSPProtocol.ParsingException {
         String[] statusHistoryStrs = statusesHistoryStr.split(";");
         if (statusHistoryStrs.length != 5)
             throw new JOSPProtocol.ParsingException("Few fields in JOSPStatusHistory string");
@@ -132,14 +132,14 @@ public class JOSPStatusHistory {
         String payload = statusHistoryStrs[4].substring(statusHistoryStrs[4].indexOf(":") + 1);
 
         try {
-            return new JOSPStatusHistory(Long.parseLong(id), compPath, compType, JavaDate.DEF_DATE_FORMATTER.parse(updatedAt), payload);
+            return new JOSPHistory(Long.parseLong(id), compPath, compType, JavaDate.DEF_DATE_FORMATTER.parse(updatedAt), payload);
         } catch (ParseException e) {
             throw new JOSPProtocol.ParsingException(String.format("Error parsing JOSPStatusHistory fileds: %s", e.getMessage()));
         }
     }
 
-    public static List<JOSPStatusHistory> listFromString(String statusesHistoryStr) throws JOSPProtocol.ParsingException {
-        List<JOSPStatusHistory> statuses = new ArrayList<>();
+    public static List<JOSPHistory> listFromString(String statusesHistoryStr) throws JOSPProtocol.ParsingException {
+        List<JOSPHistory> statuses = new ArrayList<>();
 
         for (String statusStr : statusesHistoryStr.split("\n"))
             statuses.add(fromString(statusStr));
@@ -147,7 +147,7 @@ public class JOSPStatusHistory {
         return statuses;
     }
 
-    public static String logStatuses(List<JOSPStatusHistory> statusesHistory, boolean showCompInfo) {
+    public static String logStatuses(List<JOSPHistory> statusesHistory, boolean showCompInfo) {
         StringBuilder str = new StringBuilder();
         if (showCompInfo) {
             str.append("  +-------+--------------------+---------------+------------------------------------------+--------------------------------+\n");
@@ -162,7 +162,7 @@ public class JOSPStatusHistory {
 
         }
 
-        for (JOSPStatusHistory s : statusesHistory) {
+        for (JOSPHistory s : statusesHistory) {
             if (showCompInfo) {
                 int pathLength = s.getCompPath().length();
                 String pathTruncated = pathLength<40 ? s.getCompPath() : "..." + s.getCompPath().substring(pathLength-37);

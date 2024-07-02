@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -293,6 +293,18 @@ public class ClientWrapper implements Client {
         wrapper.connect();
     }
 
+    /**
+     * @return `true` if there is a wrapped client and his server is reachable
+     * and listening on the port.
+     */
+    @Override
+    public boolean ping() {
+        if (wrapper == null)
+            return false;
+
+        return wrapper.ping();
+    }
+
     @Override
     public void disconnect() throws PeerDisconnectionException {
         if (wrapper == null)
@@ -409,16 +421,8 @@ public class ClientWrapper implements Client {
         });
     }
 
-    protected void emitOnConnect() {            // ToDO: Not throw because onConnect was emit only by wrapped client
-        log.info(String.format("ClientWrapper '%s' connected", getLocalId()));
-
-        connectionInfo.updateOnConnected();
-        JavaListeners.emitter(this, listenersConnection, "onConnect", new JavaListeners.ListenerMapper<PeerConnectionListener>() {
-            @Override
-            public void map(PeerConnectionListener l) {
-                l.onConnect(ClientWrapper.this);
-            }
-        });
+    protected void emitOnConnect() {
+        // This method is not called by the wrapper, but by the wrapped client
     }
 
     protected void emitOnDisconnecting() {
@@ -433,7 +437,10 @@ public class ClientWrapper implements Client {
         });
     }
 
-    protected void emitOnDisconnect() {         // ToDO: Not throw because onDisconnect was emit only by wrapped client
+    protected void emitOnDisconnect() {
+        // This method is not called by the wrapper, but by the wrapped client
+
+        // TODO Removed AbsGWsClient dependency from this method and delete following code
         log.info(String.format("ClientWrapper '%s' disconnected", getLocalId()));
 
         connectionInfo.updateOnDisconnected();

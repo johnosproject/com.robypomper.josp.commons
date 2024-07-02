@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@ package com.robypomper.josp.clients;
 
 import com.robypomper.josp.consts.JOSPConstants;
 import com.robypomper.josp.states.StateException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @SuppressWarnings("unused")
@@ -30,25 +30,17 @@ public abstract class JCPAPIsClientSrv extends DefaultJCPClient2 implements JCPC
 
     // Internal vars
 
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LoggerFactory.getLogger(JCPAPIsClientSrv.class);
     public static final String JCP_NAME = "JCP APIs";
-    public boolean connFailedPrinted;
 
 
     // Constructor
 
-    public JCPAPIsClientSrv(boolean useSSL, String client, String secret, String urlAPIs, String urlAuth, String callBack, String authCodeRefreshToken) {
-        super(client, secret, urlAPIs, useSSL, urlAuth, "openid offline_access", callBack, "jcp", authCodeRefreshToken, 30, JCP_NAME);
+    public JCPAPIsClientSrv(boolean useSSL, String client, String secret, String urlAPIs, String urlAuth, String callBack, String authCodeRefreshToken, int connectionRetrySeconds) throws AuthenticationException, StateException {
+        super(client, secret, urlAPIs, useSSL, urlAuth, "openid offline_access", callBack, "jcp", authCodeRefreshToken, connectionRetrySeconds, JCP_NAME);
         addConnectionListener(this);
 
-        connFailedPrinted = true;
-        try {
-            connect();
-
-        } catch (StateException | AuthenticationException e) {
-            log.warn(String.format("Error connecting to JCP %s because %s", getApiName(), e.getMessage()), e);
-        }
-        connFailedPrinted = false;
+        connect();
     }
 
 
@@ -85,23 +77,23 @@ public abstract class JCPAPIsClientSrv extends DefaultJCPClient2 implements JCPC
 
     @Override
     public void onConnectionFailed(JCPClient2 jcpClient, Throwable t) {
-        if (connFailedPrinted) {
-            log.debug(String.format("Error on %s connection attempt because %s", JCP_NAME, t.getMessage()));
-        } else {
-            log.warn(String.format("Error on %s connection attempt because %s", JCP_NAME, t.getMessage()));
-            connFailedPrinted = true;
-        }
+        if (t instanceof JCPNotReachableException)
+            if (isConnecting())
+                log.trace(String.format("Can't connect to JCP APIs at '%s', retry later", jcpClient.getAPIsUrl()));
+            else
+                log.debug(String.format("Can't connect to JCP APIs at '%s', retry later", jcpClient.getAPIsUrl()));
+        else
+            log.debug(String.format("Error on JCP APIs connection attempt at '%s'", jcpClient.getAPIsUrl()), t);
     }
 
     @Override
     public void onAuthenticationFailed(JCPClient2 jcpClient, Throwable t) {
-        log.warn(String.format("Error on %s connection authentication because %s", getApiName(), t.getMessage()));
+        log.debug(String.format("Error on %s connection authentication because %s", getApiName(), t.getMessage()));
     }
 
     @Override
     public void onDisconnected(JCPClient2 jcpClient) {
-        log.info(String.format("%s disconnected", JCP_NAME));
-        connFailedPrinted = false;
+        log.debug(String.format("%s disconnected", JCP_NAME));
     }
 
     protected abstract void storeTokens();

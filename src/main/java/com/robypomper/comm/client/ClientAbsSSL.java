@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ public abstract class ClientAbsSSL extends ClientAbs {
     private final SSLContext sslCtx;
     // cert sharing
     private final boolean enableCertSharing;
+    private boolean sharedCertificates = false;
     private final AbsCustomTrustManager trustManager;
     private final Certificate localPublicCertificate;
     private final int certSharingTimeoutMs;
@@ -213,11 +214,45 @@ public abstract class ClientAbsSSL extends ClientAbs {
         return sslCtx;
     }
 
+    /**
+     * @return `true` if the clients can share his certificate with the server
+     * and vice versa.
+     */
+    protected boolean isCertSharingEnabled() {
+        return enableCertSharing;
+    }
+
+    /**
+     * @return `true` if during the client connection it shared the certificates
+     * with the server. `false` otherwise.
+     * NB: a client share his certificates only on his first connection with the
+     * server. Subsequent connections will use the (already) shared certificates.
+     */
+    public boolean isCertificateShared() {
+        return sharedCertificates;
+    }
+
+    /**
+     * Test the ShareCertificate server's endpoint.
+     * <p>
+     * Open a connection with the server's endpoint and test if the server is
+     * listening.
+     *
+     * @param remoteAddr the server's address.
+     * @param remotePort the server's port.
+     * @return `true` if the server accepts the connection. `false` otherwise.
+     */
+    protected boolean isServerCertSharingEnabled(InetAddress remoteAddr, int remotePort) {
+        ClientCertSharing clientCertSharing = ClientCertSharing.generate(this, remoteAddr, remotePort, trustManager, localPublicCertificate);
+        return clientCertSharing.ping();
+    }
+
 
     // Connection methods
 
     @Override
     protected Socket generateConnectedSocket(InetAddress remoteAddr, int remotePort) throws PeerConnectionException {
+        // First try to connect the socket to the server
         SSLSocket s;
         try {
             s = (SSLSocket) sslCtx.getSocketFactory().createSocket(remoteAddr, remotePort);
@@ -226,6 +261,7 @@ public abstract class ClientAbsSSL extends ClientAbs {
             throw new PeerConnectionException(this, getSocket(), remoteAddr, remotePort, e);
         }
 
+        // First try to start handshake with the server, if success returns
         try {
             s.startHandshake();
             return s;
@@ -235,6 +271,7 @@ public abstract class ClientAbsSSL extends ClientAbs {
                 throw new PeerConnectionException(this, getSocket(), remoteAddr, remotePort, e, String.format("Error on Peer '%s' because SSL handshake failed with '%s:%d'", this, remoteAddr.getHostAddress(), remotePort));
         }
 
+        // If first try failed, shares certificates with the server
         try {
             if (!shareCertificate(remoteAddr, remotePort))
                 throw new PeerConnectionException(this, getSocket(), remoteAddr, remotePort, String.format("Error on Peer '%s' because CertSharing reached timeout with '%s:%d'", this, remoteAddr.getHostAddress(), remotePort));
@@ -243,6 +280,7 @@ public abstract class ClientAbsSSL extends ClientAbs {
             throw new PeerConnectionException(this, getSocket(), remoteAddr, remotePort, e, String.format("Error on Peer '%s' because CertSharing can't connect with '%s:%d' (CertShare's endpoint)", this, remoteAddr.getHostAddress(), remotePort));
         }
 
+        // Second try to connect the socket to the server
         try {
             s = (SSLSocket) sslCtx.getSocketFactory().createSocket(remoteAddr, remotePort);
 
@@ -250,6 +288,7 @@ public abstract class ClientAbsSSL extends ClientAbs {
             throw new PeerConnectionException(this, getSocket(), remoteAddr, remotePort, e);
         }
 
+        // Second try to start handshake with the server, if success returns
         try {
             s.startHandshake();
             return s;
@@ -272,7 +311,8 @@ public abstract class ClientAbsSSL extends ClientAbs {
     protected boolean shareCertificate(InetAddress remoteAddr, int remotePort) throws PeerConnectionException {
         ClientCertSharing clientCertSharing = ClientCertSharing.generate(this, remoteAddr, remotePort, trustManager, localPublicCertificate);
         clientCertSharing.shareCertificate();
-        return clientCertSharing.waitForDone(certSharingTimeoutMs);
+        sharedCertificates = clientCertSharing.waitForDone(certSharingTimeoutMs);
+        return sharedCertificates;
     }
 
 }

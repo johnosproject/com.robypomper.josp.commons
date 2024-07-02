@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
 package com.robypomper.discovery;
 
 import com.robypomper.discovery.impl.*;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 
 /**
@@ -77,7 +80,21 @@ public class DiscoverySystemFactory {
         if (DNSSD.IMPL_NAME.equalsIgnoreCase(implementation))
             return new PublisherDNSSD(srvType, srvName, srvPort, extraText);
 
-        throw new Publisher.PublishException(String.format("ERR: can't find '%s' PublisherAbs implementation", implementation));
+        try {
+            Class<?> customPublisher = DiscoverySystemFactory.class.getClassLoader().loadClass(implementation);
+            Constructor<?> constructor = customPublisher.getConstructor(String.class, String.class, Integer.class, String.class);
+            Object objPub = constructor.newInstance(srvType, srvName, srvPort, extraText);
+            if (!(objPub instanceof Publisher))
+                throw new Publisher.PublishException(String.format("ERR: initialized '%s' but it's a wrong publisher implementation (%s)", implementation, objPub.getClass().getSimpleName()));
+            return (Publisher)objPub;
+
+        } catch (ClassNotFoundException e) {
+            throw new Publisher.PublishException(String.format("ERR: can't find '%s' publisher implementation", implementation), e);
+        } catch (NoSuchMethodException e) {
+            throw new Publisher.PublishException(String.format("ERR: can't find '%s'(String, String, Integer, String) publisher constructor", implementation), e);
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new Publisher.PublishException(String.format("ERR: can't initialize '%s' publisher implementation", implementation), e);
+        }
     }
 
     /**
@@ -101,7 +118,21 @@ public class DiscoverySystemFactory {
         if (DNSSD.IMPL_NAME.equalsIgnoreCase(implementation))
             return new DiscoverDNSSD(srvType);
 
-        throw new Discover.DiscoveryException(String.format("ERR: can't find '%s' DiscoverAbs implementation", implementation));
+        try {
+            Class<?> customPublisher = DiscoverySystemFactory.class.getClassLoader().loadClass(implementation);
+            Constructor<?> constructor = customPublisher.getConstructor(String.class);
+            Object objDisc = constructor.newInstance(srvType);
+            if (!(objDisc instanceof Discover))
+                throw new Discover.DiscoveryException(String.format("ERR: initialized '%s' but it's a wrong discovery implementation (%s)", implementation, objDisc.getClass().getSimpleName()));
+            return (Discover)objDisc;
+
+        } catch (ClassNotFoundException e) {
+            throw new Discover.DiscoveryException(String.format("ERR: can't find '%s' discovery implementation", implementation), e);
+        } catch (NoSuchMethodException e) {
+            throw new Discover.DiscoveryException(String.format("ERR: can't find '%s'(String, String, Integer, String) discovery constructor", implementation), e);
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new Discover.DiscoveryException(String.format("ERR: can't initialize '%s' discovery implementation", implementation), e);
+        }
     }
 
     private static String detectAutoImplementation() {

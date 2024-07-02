@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -114,7 +114,7 @@ public class ClientCertSharing_Integration {
 
     @Test
     public void INTEGRATION_CertSharing_ClientAndServer() throws ServerStartupException, PeerConnectionException, CertificateEncodingException, InterruptedException {
-        server = new ServerCertSharing(SERVER_ID + "-CertSharing", null, PORT, null, serverTrustManager, serverCertificate);
+        server = new ServerCertSharing(SERVER_ID + "-CertSharing", null, PORT, serverTrustManager, serverCertificate);
         server.addListener(listenerServerClient);
         server.startup();
         client = new ClientCertSharing(CLIENT_ID + "-CertSharing", server.getLocalId(), server.getServerPeerInfo().getAddr(), PORT, null, clientTrustManager, clientCertificate);
@@ -138,7 +138,7 @@ public class ClientCertSharing_Integration {
 
     @Test
     public void INTEGRATION_CertSharing_OnlyServer() throws ServerStartupException, PeerConnectionException, CertificateEncodingException, InterruptedException {
-        server = new ServerCertSharing(SERVER_ID + "-CertSharing", null, PORT, null, serverTrustManager, serverCertificate);
+        server = new ServerCertSharing(SERVER_ID + "-CertSharing", null, PORT, serverTrustManager, serverCertificate);
         server.addListener(listenerServerClient);
         server.startup();
         client = new ClientCertSharing(CLIENT_ID + "-CertSharing", server.getLocalId(), server.getServerPeerInfo().getAddr(), PORT, null, clientTrustManager, null);

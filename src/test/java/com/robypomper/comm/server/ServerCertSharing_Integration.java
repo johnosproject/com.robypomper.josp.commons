@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -118,7 +118,7 @@ public class ServerCertSharing_Integration {
 
     @Test
     public void INTEGRATION_certSharing() throws ServerStartupException {
-        ServerCertSharing serverCS = new ServerCertSharing(SERVER_LOCAL_ID, null, PORT, null, serverTrustManager, serverCertificate);
+        ServerCertSharing serverCS = new ServerCertSharing(SERVER_LOCAL_ID, null, PORT, null, serverCertificate);
         server = serverCS;
 
         serverCS.startup();

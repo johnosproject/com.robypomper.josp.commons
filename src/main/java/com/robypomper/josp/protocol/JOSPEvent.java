@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -166,6 +166,8 @@ public class JOSPEvent {
         String phase = eventStrs[5].substring(eventStrs[5].indexOf(":") + 1);
         String payload = eventStrs[6].substring(eventStrs[6].indexOf(":") + 1);
         String errorPayload = eventStrs[7].substring(eventStrs[7].indexOf(":") + 1);
+        if (errorPayload.equals("null"))
+            errorPayload = null;
 
         try {
             return new JOSPEvent(Long.parseLong(id), EventType.valueOf(type), srcId, AgentType.valueOf(srcType), JavaDate.DEF_DATE_FORMATTER.parse(emittedAt), phase, payload, errorPayload);

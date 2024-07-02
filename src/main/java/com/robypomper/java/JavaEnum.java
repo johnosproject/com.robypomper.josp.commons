@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,7 @@
 
 package com.robypomper.java;
 
-import com.robypomper.log.Mrk_Commons;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 
 /**
@@ -242,9 +241,9 @@ public class JavaEnum {
                     break;
                 }
             if (caller == null)
-                log.debug(Mrk_Commons.STATE, String.format("%s new state = %s (from = %s)", stateName, val, oldVal));
+                log.debug(String.format("%s new state = %s (from = %s)", stateName, val, oldVal));
             else
-                log.debug(Mrk_Commons.STATE, String.format("%s new state = %s by %s::%s at line %d (from = %s)", stateName, val, caller.getClassName(), caller.getMethodName(), caller.getLineNumber(), oldVal));
+                log.debug(String.format("%s new state = %s by %s::%s at line %d (from = %s)", stateName, val, caller.getClassName(), caller.getMethodName(), caller.getLineNumber(), oldVal));
         }
 
 

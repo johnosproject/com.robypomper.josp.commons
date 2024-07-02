@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ import com.robypomper.java.JavaTimers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -188,6 +189,33 @@ public abstract class ClientAbs extends PeerAbs implements Client {
         startupConnection();
         stopReConnecting();
     }
+
+    /**
+     * @return `true` if there is a wrapped client and his server is reachable
+     * and listening on the port.
+     */
+    @Override
+    public boolean ping() {
+        // Create and connect socket
+        Socket socket = null;
+        try {
+            socket = generateConnectedSocket(remoteAddr, remotePort);
+
+        } catch (Throwable e) {
+            log.warn("PING: " + e);
+            // Return FALSE
+            return false;
+        }
+
+        // Close socket
+        try {
+            socket.close();
+        } catch (IOException ignore) {}
+
+        // Return TRUE
+        return true;
+    }
+
 
     protected abstract Socket generateConnectedSocket(InetAddress remoteAddr, int remotePort) throws PeerConnectionException;
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
  * The John Operating System Project is the collection of software and configurations
  * to generate IoT EcoSystem, like the John Operating System Platform one.
- * Copyright (C) 2021 Roberto Pompermaier
+ * Copyright (C) 2024 Roberto Pompermaier
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -218,46 +218,32 @@ public class JavaFileWatcher {
                     while ((key = watchService.poll()) != null && !watcherThreadMustShutdown) {
                         for (WatchEvent<?> event : key.pollEvents()) {
                             Path filePath = Paths.get(fileDir.toString(), event.context().toString());
-                            System.out.printf("FileWatched %s%n", filePath);
+                            List<JavaFileWatcherListener> fileListeners;
+                            synchronized (listenersMap) {
+                                fileListeners = listenersMap.get(filePath);
+                            }
+
+                            if (fileListeners == null)
+                                continue;
                             try {
-                                List<JavaFileWatcherListener> fileListeners;
-                                synchronized (listenersMap) {
-                                    fileListeners = listenersMap.get(filePath);
-                                }
-
-                                if (fileListeners == null)
-                                    continue;
-
-                                if (event.kind().equals(StandardWatchEventKinds.ENTRY_CREATE)) {
+                                if (event.kind().equals(StandardWatchEventKinds.ENTRY_CREATE))
                                     for (JavaFileWatcherListener l : fileListeners) {
-                                        try {
-                                            l.onCreate(filePath);
-                                            l.onAnyUpdate(filePath);
-                                        } catch (Throwable t) {
-                                            t.printStackTrace();
-                                        }
+                                        l.onCreate(filePath);
+                                        l.onAnyUpdate(filePath);
                                     }
-                                } else if (event.kind().equals(StandardWatchEventKinds.ENTRY_DELETE)) {
+                                else if (event.kind().equals(StandardWatchEventKinds.ENTRY_DELETE))
                                     for (JavaFileWatcherListener l : fileListeners) {
-                                        try {
-                                            l.onDelete(filePath);
-                                            l.onAnyUpdate(filePath);
-                                        } catch (Throwable t) {
-                                            t.printStackTrace();
-                                        }
+                                        l.onDelete(filePath);
+                                        l.onAnyUpdate(filePath);
                                     }
-                                } else if (event.kind().equals(StandardWatchEventKinds.ENTRY_MODIFY)) {
+                                else if (event.kind().equals(StandardWatchEventKinds.ENTRY_MODIFY))
                                     for (JavaFileWatcherListener l : fileListeners) {
-                                        try {
-                                            l.onUpdate(filePath);
-                                            l.onAnyUpdate(filePath);
-                                        } catch (Throwable t) {
-                                            t.printStackTrace();
-                                        }
+                                        l.onUpdate(filePath);
+                                        l.onAnyUpdate(filePath);
                                     }
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                            } catch (Throwable t) {
+                                //t.printStackTrace();
+                                assert false : t.getMessage();
                             }
                         }
                         key.reset();
